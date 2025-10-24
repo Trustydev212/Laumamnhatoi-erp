@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: nha-toi-postgres
+    environment:
+      POSTGRES_DB: nha_toi_erp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backup:/backup
+    networks:
+      - nha-toi-network
+
+  # Redis for caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: nha-toi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - nha-toi-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: nha-toi-backend
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres123@postgres:5432/nha_toi_erp
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: your-super-secret-jwt-key
+      JWT_REFRESH_SECRET: your-super-secret-refresh-key
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    networks:
+      - nha-toi-network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: nha-toi-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_WS_URL: ws://localhost:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+    networks:
+      - nha-toi-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  nha-toi-network:
+    driver: bridge

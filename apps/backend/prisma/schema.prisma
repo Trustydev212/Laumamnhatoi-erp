@@ -1,0 +1,356 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== CORE MODELS =====
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String?
+  avatar    String?
+  isActive  Boolean  @default(true)
+  role      String @default("STAFF")
+  
+  // Relations
+  shifts    Shift[]
+  orders    Order[]
+  auditLogs AuditLog[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("users")
+}
+
+model Role {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+  permissions String // JSON string of permission strings
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("roles")
+}
+
+// ===== POS MODULE =====
+
+model Table {
+  id          String      @id @default(cuid())
+  name        String      @unique
+  capacity    Int
+  status      String @default("AVAILABLE")
+  location    String?
+  description String?
+  
+  // Relations
+  orders Order[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("tables")
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  orderNumber String      @unique
+  tableId     String
+  userId      String
+  customerId  String?     // Optional customer
+  status      String @default("PENDING")
+  subtotal    Decimal     @default(0)
+  tax         Decimal     @default(0)
+  discount    Decimal     @default(0)
+  total       Decimal     @default(0)
+  notes       String?
+  isPaid      Boolean     @default(false)
+  paidAt      DateTime?
+  
+  // Relations
+  table       Table       @relation(fields: [tableId], references: [id])
+  user        User        @relation(fields: [userId], references: [id])
+  customer    Customer?   @relation(fields: [customerId], references: [id])
+  orderItems  OrderItem[]
+  payments    Payment[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  menuId    String
+  quantity  Int
+  price     Decimal
+  subtotal  Decimal
+  notes     String?
+  
+  // Relations
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menu      Menu    @relation(fields: [menuId], references: [id])
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("order_items")
+}
+
+model Menu {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  price       Decimal
+  categoryId  String
+  image       String?
+  isActive    Boolean    @default(true)
+  isAvailable Boolean    @default(true)
+  
+  // Relations
+  category    Category   @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+  ingredients MenuIngredient[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("menus")
+}
+
+model Category {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+  image       String?
+  sortOrder   Int    @default(0)
+  isActive    Boolean @default(true)
+  
+  // Relations
+  menus Menu[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("categories")
+}
+
+// ===== INVENTORY MODULE =====
+
+model Ingredient {
+  id          String            @id @default(cuid())
+  name        String            @unique
+  unit        String
+  currentStock Decimal          @default(0)
+  minStock    Decimal           @default(0)
+  maxStock    Decimal           @default(0)
+  costPrice   Decimal
+  supplierId  String?
+  expiryDate  DateTime?
+  isActive    Boolean           @default(true)
+  
+  // Relations
+  supplier    Supplier?         @relation(fields: [supplierId], references: [id])
+  menuIngredients MenuIngredient[]
+  stockMovements StockMovement[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("ingredients")
+}
+
+model MenuIngredient {
+  id           String     @id @default(cuid())
+  menuId       String
+  ingredientId String
+  quantity     Decimal
+  unit         String
+  
+  // Relations
+  menu        Menu       @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  ingredient  Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([menuId, ingredientId])
+  @@map("menu_ingredients")
+}
+
+model StockMovement {
+  id           String            @id @default(cuid())
+  ingredientId String
+  type         String
+  quantity     Decimal
+  reason       String?
+  referenceId  String? // Reference to order, purchase, etc.
+  
+  // Relations
+  ingredient   Ingredient        @relation(fields: [ingredientId], references: [id])
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  @@map("stock_movements")
+}
+
+model Supplier {
+  id          String @id @default(cuid())
+  name        String
+  contactName String?
+  phone       String?
+  email       String?
+  address     String?
+  isActive    Boolean @default(true)
+  
+  // Relations
+  ingredients Ingredient[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("suppliers")
+}
+
+// ===== CUSTOMER MODULE =====
+
+model Customer {
+  id          String @id @default(cuid())
+  name        String
+  phone       String @unique
+  email       String?
+  address     String?
+  birthday    DateTime?
+  points      Int    @default(0)
+  level       String @default("BRONZE")
+  isActive    Boolean @default(true)
+  
+  // Relations
+  orders          Order[]
+  pointTransactions PointTransaction[]
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("customers")
+}
+
+model PointTransaction {
+  id         String            @id @default(cuid())
+  customerId String
+  type       String
+  points     Int
+  description String?
+  orderId    String?
+  
+  // Relations
+  customer   Customer          @relation(fields: [customerId], references: [id])
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  @@map("point_transactions")
+}
+
+// ===== PAYMENT MODULE =====
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String
+  method        String
+  amount        Decimal
+  reference     String? // External payment reference
+  status        String @default("PENDING")
+  processedAt   DateTime?
+  
+  // Relations
+  order         Order         @relation(fields: [orderId], references: [id])
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("payments")
+}
+
+// ===== SHIFT MANAGEMENT =====
+
+model Shift {
+  id        String     @id @default(cuid())
+  userId    String
+  startTime DateTime
+  endTime   DateTime?
+  status    String @default("ACTIVE")
+  cashStart Decimal    @default(0)
+  cashEnd   Decimal?
+  
+  // Relations
+  user      User       @relation(fields: [userId], references: [id])
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("shifts")
+}
+
+// ===== AUDIT LOG =====
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String
+  oldValues String? // JSON string
+  newValues String? // JSON string
+  ipAddress String?
+  userAgent String?
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  
+  // Timestamps
+  createdAt DateTime @default(now())
+  
+  @@map("audit_logs")
+}
+
+// ===== ENUMS (converted to String constants) =====
+// UserRole: ADMIN, MANAGER, CASHIER, KITCHEN, WAITER, STAFF
+// TableStatus: AVAILABLE, OCCUPIED, RESERVED, MAINTENANCE
+// OrderStatus: PENDING, CONFIRMED, PREPARING, READY, SERVED, CANCELLED, COMPLETED
+// StockMovementType: IN, OUT, ADJUSTMENT, WASTE
+// PointTransactionType: EARNED, REDEEMED, EXPIRED, ADJUSTED
+// PaymentMethod: CASH, CARD, MOMO, ZALOPAY, BANK_TRANSFER
+// PaymentStatus: PENDING, SUCCESS, FAILED, CANCELLED, REFUNDED
+// ShiftStatus: ACTIVE, CLOSED, CANCELLED
+
