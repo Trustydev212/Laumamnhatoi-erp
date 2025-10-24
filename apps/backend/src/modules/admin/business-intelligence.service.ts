@@ -290,7 +290,7 @@ export class BusinessIntelligenceService {
 
     return Object.entries(ordersByDay).map(([date, data]) => ({
       date,
-      ...data
+      ...(data as object)
     }));
   }
 
