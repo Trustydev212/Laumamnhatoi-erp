@@ -11,6 +11,7 @@ import { ReportModule } from './modules/report/report.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { ShiftModule } from './modules/shift/shift.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { PrinterModule } from './modules/printer/printer.module';
 import { RealtimeModule } from './common/realtime/realtime.module';
 import { AuditModule } from './common/audit/audit.module';
 import { BackupModule } from './common/backup/backup.module';
@@ -53,6 +54,7 @@ import { AppService } from './app.service';
     PaymentModule,
     ShiftModule,
     AdminModule,
+    PrinterModule,
   ],
   controllers: [AppController],
   providers: [AppService],
