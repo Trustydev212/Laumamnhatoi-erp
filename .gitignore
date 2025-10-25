@@ -178,7 +178,6 @@ Thumbs.db
 *.sqlite3
 
 # Backup files
-backup/
 *.backup
 *.bak
 
