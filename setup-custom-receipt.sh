@@ -38,6 +38,9 @@ cd apps/backend
 print_status "Cài đặt packages cần thiết..."
 npm install qrcode express cors
 
+# Create services directory if not exists
+mkdir -p src/services
+
 # Create enhanced printer service
 print_status "Tạo enhanced printer service..."
 
