@@ -921,7 +921,82 @@ export default function PosPage() {
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
               <button
-                onClick={() => window.print()}
+                onClick={async () => {
+                  try {
+                    // Tạo QR code ngân hàng
+                    const response = await fetch('/api/printer/enhanced/bank-qr', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        amount: Number(billData.total),
+                        description: `Thanh toan hoa don ${billData.orderNumber}`
+                      })
+                    });
+                    
+                    if (response.ok) {
+                      const qrSvg = await response.text();
+                      const newWindow = window.open('', '_blank');
+                      if (newWindow) {
+                        newWindow.document.write(`
+                          <html>
+                            <head><title>QR Code Thanh Toán</title></head>
+                            <body style="text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+                              <h2>QR Code Thanh Toán</h2>
+                              <p>Số tiền: ${Number(billData.total).toLocaleString('vi-VN')} ₫</p>
+                              <p>Hóa đơn: ${billData.orderNumber}</p>
+                              ${qrSvg}
+                              <p>Quét mã QR để thanh toán</p>
+                            </body>
+                          </html>
+                        `);
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Error generating bank QR:', error);
+                    alert('Lỗi khi tạo QR code thanh toán');
+                  }
+                }}
+                className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
+              >
+                QR Thanh toán
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    // Gọi API in hóa đơn mới với QR code
+                    const response = await fetch('/api/printer/enhanced/receipt', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ 
+                        orderId: billData.id,
+                        customConfig: {
+                          qrCode: { enabled: true },
+                          footer: { showQR: true, customMessage: 'Cảm ơn quý khách!' }
+                        }
+                      })
+                    });
+                    
+                    if (response.ok) {
+                      const receiptText = await response.text();
+                      const blob = new Blob([receiptText], { type: 'text/plain' });
+                      const url = window.URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `receipt-${billData.orderNumber}.txt`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      window.URL.revokeObjectURL(url);
+                    } else {
+                      // Fallback to window.print() if API fails
+                      window.print();
+                    }
+                  } catch (error) {
+                    console.error('Error printing receipt:', error);
+                    // Fallback to window.print() if API fails
+                    window.print();
+                  }
+                }}
                 className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
               >
                 In hóa đơn

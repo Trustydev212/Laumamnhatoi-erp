@@ -364,6 +364,12 @@ export default function AdminPage() {
             >
               Cấu hình hóa đơn
             </button>
+            <button
+              className={`py-2 px-4 text-sm font-medium ${activeTab === 'tax-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('tax-settings')}
+            >
+              Cấu hình thuế
+            </button>
           </div>
         </div>
 
@@ -1038,6 +1044,152 @@ export default function AdminPage() {
                 </button>
                 <button
                   onClick={() => alert('Cấu hình đã được lưu!')}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  Lưu cấu hình
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tax Settings Tab */}
+        {activeTab === 'tax-settings' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Cấu hình thuế và phí</h2>
+              <p className="text-gray-600 mb-6">
+                Thiết lập thuế VAT, phí phục vụ và các loại thuế khác cho hệ thống
+              </p>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Cấu hình thuế VAT */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Thuế VAT</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Bật thuế VAT</label>
+                      <input type="checkbox" className="rounded" defaultChecked />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tỷ lệ thuế VAT (%)</label>
+                      <input
+                        type="number"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="10"
+                        defaultValue="10"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên thuế</label>
+                      <input
+                        type="text"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="VAT"
+                        defaultValue="VAT"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Thuế đã bao gồm trong giá</label>
+                      <input type="checkbox" className="rounded" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cấu hình phí phục vụ */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Phí phục vụ</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Bật phí phục vụ</label>
+                      <input type="checkbox" className="rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tỷ lệ phí phục vụ (%)</label>
+                      <input
+                        type="number"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="5"
+                        defaultValue="5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên phí phục vụ</label>
+                      <input
+                        type="text"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Phí phục vụ"
+                        defaultValue="Phí phục vụ"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-4">Cấu hình mặc định</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => alert('Đã áp dụng cấu hình: Không thuế')}
+                    className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-left"
+                  >
+                    <h4 className="font-medium">Không thuế</h4>
+                    <p className="text-sm text-gray-600">VAT: 0%, Phí phục vụ: 0%</p>
+                  </button>
+                  <button
+                    onClick={() => alert('Đã áp dụng cấu hình: VAT 10%')}
+                    className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-left"
+                  >
+                    <h4 className="font-medium">VAT 10%</h4>
+                    <p className="text-sm text-gray-600">VAT: 10%, Phí phục vụ: 0%</p>
+                  </button>
+                  <button
+                    onClick={() => alert('Đã áp dụng cấu hình: VAT 10% + Phí phục vụ 5%')}
+                    className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-left"
+                  >
+                    <h4 className="font-medium">VAT + Phí phục vụ</h4>
+                    <p className="text-sm text-gray-600">VAT: 10%, Phí phục vụ: 5%</p>
+                  </button>
+                  <button
+                    onClick={() => alert('Đã áp dụng cấu hình: Chỉ phí phục vụ 10%')}
+                    className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-left"
+                  >
+                    <h4 className="font-medium">Chỉ phí phục vụ</h4>
+                    <p className="text-sm text-gray-600">VAT: 0%, Phí phục vụ: 10%</p>
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/printer/enhanced/calculate-tax', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ subtotal: 100000 })
+                      });
+                      if (response.ok) {
+                        const result = await response.json();
+                        alert(`Test tính thuế: ${JSON.stringify(result.taxCalculation, null, 2)}`);
+                      }
+                    } catch (error) {
+                      console.error('Error testing tax calculation:', error);
+                      alert('Lỗi khi test tính thuế');
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  Test tính thuế
+                </button>
+                <button
+                  onClick={() => alert('Cấu hình thuế đã được lưu!')}
                   className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

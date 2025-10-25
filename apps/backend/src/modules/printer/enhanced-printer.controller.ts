@@ -1,10 +1,16 @@
-import { Controller, Post, Get, Body, Res } from '@nestjs/common';
+import { Controller, Post, Get, Body, Res, Query } from '@nestjs/common';
 import { Response } from 'express';
 import { EnhancedPrinterService } from '../../services/enhanced-printer.service';
+import { BankQRService } from '../../services/bank-qr.service';
+import { TaxConfigService } from '../../services/tax-config.service';
 
 @Controller('printer/enhanced')
 export class EnhancedPrinterController {
-  constructor(private enhancedPrinterService: EnhancedPrinterService) {}
+  constructor(
+    private enhancedPrinterService: EnhancedPrinterService,
+    private bankQRService: BankQRService,
+    private taxConfigService: TaxConfigService
+  ) {}
 
   @Post('receipt')
   async printCustomReceipt(@Body() body: { orderId: string; customConfig?: any }, @Res() res: Response) {
@@ -81,6 +87,89 @@ export class EnhancedPrinterController {
   @Get('config')
   getConfig() {
     return { success: true, config: this.enhancedPrinterService.getConfig() };
+  }
+
+  @Post('bank-qr')
+  async generateBankQR(@Body() body: { amount: number; description?: string }, @Res() res: Response) {
+    try {
+      const qrCode = await this.enhancedPrinterService.generateBankQRCode(body.amount, body.description);
+      
+      if (qrCode) {
+        res.set({
+          'Content-Type': 'image/svg+xml',
+          'Content-Length': qrCode.length
+        });
+        res.send(qrCode);
+      } else {
+        res.status(500).json({ error: 'Failed to generate bank QR code' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  @Post('multi-bank-qr')
+  async generateMultiBankQR(@Body() body: { amount: number; description?: string }, @Res() res: Response) {
+    try {
+      const qrCodes = await this.enhancedPrinterService.generateMultiBankQRCode(body.amount, body.description);
+      
+      if (qrCodes) {
+        res.json({
+          success: true,
+          qrCodes,
+          amount: body.amount,
+          description: body.description
+        });
+      } else {
+        res.status(500).json({ error: 'Failed to generate multi bank QR codes' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  @Get('bank-config')
+  getBankConfig() {
+    return {
+      success: true,
+      config: this.bankQRService.getBankConfig()
+    };
+  }
+
+  @Post('bank-config')
+  updateBankConfig(@Body() body: any) {
+    this.bankQRService.updateBankConfig(body);
+    return { success: true, message: 'Bank configuration updated' };
+  }
+
+  @Get('tax-config')
+  async getTaxConfig() {
+    try {
+      const config = await this.taxConfigService.getTaxConfig();
+      return { success: true, config };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  @Post('tax-config')
+  async updateTaxConfig(@Body() body: any) {
+    try {
+      const config = await this.taxConfigService.updateTaxConfig(body);
+      return { success: true, config, message: 'Tax configuration updated' };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  @Post('calculate-tax')
+  async calculateTax(@Body() body: { subtotal: number; orderId?: string }) {
+    try {
+      const taxCalculation = await this.taxConfigService.calculateTax(body.subtotal, body.orderId);
+      return { success: true, taxCalculation };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   @Get('test')

@@ -1,10 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { BankQRService } from './bank-qr.service';
+import { TaxConfigService } from './tax-config.service';
 import * as QRCode from 'qrcode';
 
 @Injectable()
 export class EnhancedPrinterService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private bankQRService: BankQRService,
+    private taxConfigService: TaxConfigService
+  ) {}
 
   // Cấu hình hóa đơn có thể tùy chỉnh
   private receiptConfig = {
@@ -52,7 +58,7 @@ export class EnhancedPrinterService {
     FEED_PAPER: this.LF + this.LF + this.LF,
   };
 
-  // Tạo QR code
+  // Tạo QR code thông tin hóa đơn
   async generateQRCode(orderData: any): Promise<string | null> {
     try {
       const qrData = {
@@ -73,6 +79,54 @@ export class EnhancedPrinterService {
       return qrCode;
     } catch (error) {
       console.error('QR Code generation error:', error);
+      return null;
+    }
+  }
+
+  // Tạo QR code ngân hàng
+  async generateBankQRCode(amount: number, description: string = ''): Promise<string | null> {
+    try {
+      const bankQRUrl = this.bankQRService.generateBankQR(amount, description);
+      
+      const qrCode = await QRCode.toString(bankQRUrl, {
+        type: 'svg',
+        width: this.receiptConfig.qrCode.size,
+        margin: this.receiptConfig.qrCode.margin
+      });
+      
+      return qrCode;
+    } catch (error) {
+      console.error('Bank QR Code generation error:', error);
+      return null;
+    }
+  }
+
+  // Tạo QR code đa ngân hàng
+  async generateMultiBankQRCode(amount: number, description: string = ''): Promise<any> {
+    try {
+      const multiBankQR = this.bankQRService.generateMultiBankQR(amount, description);
+      
+      const qrCodes = {
+        vietqr: await QRCode.toString(multiBankQR.vietqr, {
+          type: 'svg',
+          width: this.receiptConfig.qrCode.size,
+          margin: this.receiptConfig.qrCode.margin
+        }),
+        vnpay: await QRCode.toString(multiBankQR.vnpay, {
+          type: 'svg',
+          width: this.receiptConfig.qrCode.size,
+          margin: this.receiptConfig.qrCode.margin
+        }),
+        momo: await QRCode.toString(multiBankQR.momo, {
+          type: 'svg',
+          width: this.receiptConfig.qrCode.size,
+          margin: this.receiptConfig.qrCode.margin
+        })
+      };
+      
+      return qrCodes;
+    } catch (error) {
+      console.error('Multi Bank QR Code generation error:', error);
       return null;
     }
   }
