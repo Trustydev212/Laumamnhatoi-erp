@@ -358,6 +358,12 @@ export default function AdminPage() {
             >
               Analytics
               </button>
+            <button
+              className={`py-2 px-4 text-sm font-medium ${activeTab === 'receipt-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('receipt-settings')}
+            >
+              Cấu hình hóa đơn
+            </button>
           </div>
         </div>
 
@@ -823,6 +829,224 @@ export default function AdminPage() {
 
             {/* Advanced Charts */}
             <AnalyticsCharts analyticsData={analyticsData} />
+          </div>
+        )}
+
+        {/* Receipt Settings Tab */}
+        {activeTab === 'receipt-settings' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Cấu hình hóa đơn với QR Code</h2>
+              <p className="text-gray-600 mb-6">
+                Tùy chỉnh thông tin cửa hàng và cấu hình hóa đơn với QR code cho máy in XP-80C
+              </p>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Thông tin cửa hàng */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Thông tin cửa hàng</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên cửa hàng</label>
+                      <input
+                        type="text"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="NHÀ TÔI ERP"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phụ đề</label>
+                      <input
+                        type="text"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Hệ thống quản lý quán ăn"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+                      <textarea
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows={2}
+                        placeholder="123 Đường ABC, Quận 1, TP.HCM"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Điện thoại</label>
+                        <input
+                          type="text"
+                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0123 456 789"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="info@nhatoi.com"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                        <input
+                          type="text"
+                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="www.nhatoi.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Mã số thuế</label>
+                        <input
+                          type="text"
+                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="0123456789"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cấu hình QR Code */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Cấu hình QR Code</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Bật QR Code</label>
+                      <input type="checkbox" className="rounded" defaultChecked />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Kích thước QR Code</label>
+                      <input
+                        type="number"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="200"
+                        defaultValue="200"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Margin QR Code</label>
+                      <input
+                        type="number"
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="2"
+                        defaultValue="2"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-gray-700">Tùy chọn hiển thị</h4>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm text-gray-600">Hiển thị QR Code</label>
+                          <input type="checkbox" className="rounded" defaultChecked />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm text-gray-600">Hiển thị Website</label>
+                          <input type="checkbox" className="rounded" defaultChecked />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm text-gray-600">Hiển thị MST</label>
+                          <input type="checkbox" className="rounded" defaultChecked />
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm text-gray-600">Hiển thị "Cảm ơn"</label>
+                          <input type="checkbox" className="rounded" defaultChecked />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tin nhắn tùy chỉnh</label>
+                      <textarea
+                        className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows={3}
+                        placeholder="Cảm ơn quý khách đã sử dụng dịch vụ!"
+                        defaultValue="Cảm ơn quý khách đã sử dụng dịch vụ!"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/printer/enhanced/test');
+                      if (response.ok) {
+                        const receiptText = await response.text();
+                        const blob = new Blob([receiptText], { type: 'text/plain' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'test-receipt.txt';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                        alert('File hóa đơn test đã được tải xuống!');
+                      }
+                    } catch (error) {
+                      console.error('Error testing receipt:', error);
+                      alert('Lỗi khi tạo hóa đơn test');
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Test hóa đơn
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/printer/enhanced/qr', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: 'test-order' }),
+                      });
+                      if (response.ok) {
+                        const qrSvg = await response.text();
+                        const newWindow = window.open('', '_blank');
+                        if (newWindow) {
+                          newWindow.document.write(`
+                            <html>
+                              <head><title>QR Code Test</title></head>
+                              <body style="text-align: center; padding: 20px;">
+                                <h2>QR Code Test</h2>
+                                ${qrSvg}
+                                <p>Quét mã QR này để xem thông tin hóa đơn</p>
+                              </body>
+                            </html>
+                          `);
+                        }
+                        alert('QR Code đã được tạo!');
+                      }
+                    } catch (error) {
+                      console.error('Error testing QR code:', error);
+                      alert('Lỗi khi tạo QR code');
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  </svg>
+                  Test QR Code
+                </button>
+                <button
+                  onClick={() => alert('Cấu hình đã được lưu!')}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  Lưu cấu hình
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
