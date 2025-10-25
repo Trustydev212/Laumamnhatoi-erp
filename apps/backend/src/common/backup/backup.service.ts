@@ -5,7 +5,6 @@ import { PrismaService } from '../prisma/prisma.service';
 export class BackupService {
   constructor(private prisma: PrismaService) {}
 
-  // Tạo backup database
   async createBackup(): Promise<string> {
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -27,7 +26,6 @@ export class BackupService {
     }
   }
 
-  // Restore từ backup
   async restoreBackup(backupFilePath: string): Promise<boolean> {
     try {
       const { exec } = require('child_process');
@@ -45,7 +43,6 @@ export class BackupService {
     }
   }
 
-  // Lấy danh sách backup
   async listBackups(): Promise<string[]> {
     try {
       const fs = require('fs');
@@ -64,7 +61,6 @@ export class BackupService {
     }
   }
 
-  // Xóa backup cũ
   async cleanupOldBackups(keepCount: number = 7): Promise<void> {
     try {
       const backups = await this.listBackups();
