@@ -136,12 +136,12 @@ export default function AdminPage() {
 
     loadData();
 
-    // Auto refresh data every 30 seconds
-    const interval = setInterval(() => {
-      loadData();
-    }, 30000);
+    // Auto refresh disabled - manual refresh only
+    // const interval = setInterval(() => {
+    //   loadData();
+    // }, 30000);
 
-    return () => clearInterval(interval);
+    // return () => clearInterval(interval);
   }, [user, router]);
 
   const loadData = async () => {
@@ -377,7 +377,19 @@ export default function AdminPage() {
         {activeTab === 'health' && (
           <div className="bg-white rounded-lg shadow">
             <div className="p-6 border-b">
-              <h2 className="text-xl font-semibold">System Health Overview</h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">System Health Overview</h2>
+                <button
+                  onClick={loadData}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  disabled={loading}
+                >
+                  <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {loading ? 'Đang tải...' : 'Làm mới'}
+                </button>
+              </div>
             </div>
             <div className="p-6">
               {systemHealth ? (
@@ -761,6 +773,23 @@ export default function AdminPage() {
         {/* Analytics Tab */}
         {activeTab === 'analytics' && (
           <div className="space-y-6">
+            {/* Header với nút refresh */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Analytics Dashboard</h2>
+                <button
+                  onClick={loadData}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                  disabled={loading}
+                >
+                  <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {loading ? 'Đang tải...' : 'Làm mới'}
+                </button>
+              </div>
+            </div>
+            
             {/* Advanced Filter */}
             <AdvancedFilter 
               filterType="analytics"
@@ -1189,13 +1218,239 @@ export default function AdminPage() {
                   Test tính thuế
                 </button>
                 <button
-                  onClick={() => alert('Cấu hình thuế đã được lưu!')}
+                  onClick={async () => {
+                    try {
+                      // Lấy giá trị từ form
+                      const vatEnabled = (document.querySelector('input[type="checkbox"]') as HTMLInputElement)?.checked || false;
+                      const vatRate = parseFloat((document.querySelector('input[type="number"]') as HTMLInputElement)?.value || '0');
+                      const vatName = (document.querySelector('input[placeholder="VAT"]') as HTMLInputElement)?.value || 'VAT';
+                      const vatIncluded = (document.querySelectorAll('input[type="checkbox"]')[1] as HTMLInputElement)?.checked || false;
+                      
+                      const serviceChargeEnabled = (document.querySelectorAll('input[type="checkbox"]')[2] as HTMLInputElement)?.checked || false;
+                      const serviceChargeRate = parseFloat((document.querySelectorAll('input[type="number"]')[1] as HTMLInputElement)?.value || '0');
+                      const serviceChargeName = (document.querySelector('input[placeholder="Phí phục vụ"]') as HTMLInputElement)?.value || 'Phí phục vụ';
+                      
+                      const taxConfig = {
+                        vatEnabled,
+                        vatRate,
+                        vatName,
+                        vatIncludedInPrice: vatIncluded,
+                        serviceChargeEnabled,
+                        serviceChargeRate,
+                        serviceChargeName,
+                        currency: 'VND',
+                        currencySymbol: '₫',
+                        roundingMethod: 'round'
+                      };
+
+                      const response = await fetch('/api/printer/enhanced/tax-config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(taxConfig)
+                      });
+                      
+                      if (response.ok) {
+                        alert('Cấu hình thuế đã được lưu!');
+                      } else {
+                        alert('Lỗi khi lưu cấu hình thuế');
+                      }
+                    } catch (error) {
+                      alert('Lỗi khi lưu cấu hình thuế: ' + (error instanceof Error ? error.message : String(error)));
+                    }
+                  }}
                   className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   Lưu cấu hình
+                </button>
+              </div>
+            </div>
+
+            {/* Cấu hình thông tin ngân hàng */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Cấu hình thông tin ngân hàng</h2>
+              <p className="text-gray-600 mb-6">
+                Thiết lập thông tin ngân hàng để tạo QR code thanh toán
+              </p>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* VietQR Configuration */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">VietQR (Techcombank)</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Bank ID</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="970422"
+                        defaultValue="970422"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Số tài khoản</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="1903xxxxxx"
+                        defaultValue="1903xxxxxx"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên chủ tài khoản</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="NGUYEN VAN A"
+                        defaultValue="NGUYEN VAN A"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Template</label>
+                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="compact2">Compact2</option>
+                        <option value="compact">Compact</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* VNPAY Configuration */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">VNPAY</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Merchant Code</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="YOUR_VNPAY_MERCHANT_CODE"
+                        defaultValue="YOUR_VNPAY_MERCHANT_CODE"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Terminal ID</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="YOUR_VNPAY_TERMINAL_ID"
+                        defaultValue="YOUR_VNPAY_TERMINAL_ID"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Checksum Key</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="YOUR_VNPAY_CHECKSUM_KEY"
+                        defaultValue="YOUR_VNPAY_CHECKSUM_KEY"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* MoMo Configuration */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">MoMo</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="09xxxxxxxx"
+                        defaultValue="09xxxxxxxx"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên chủ tài khoản</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="NGUYEN VAN A"
+                        defaultValue="NGUYEN VAN A"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/printer/enhanced/bank-qr', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ amount: 100000, description: 'Test QR Bank' })
+                      });
+                      if (response.ok) {
+                        const qrSvg = await response.text();
+                        const newWindow = window.open('', '_blank');
+                        if (newWindow) {
+                          newWindow.document.write(`
+                            <html>
+                              <head><title>Test QR Bank</title></head>
+                              <body style="text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+                                <h2>Test QR Bank</h2>
+                                <p>Số tiền: 100,000 ₫</p>
+                                ${qrSvg}
+                                <p>Quét mã QR để thanh toán</p>
+                              </body>
+                            </html>
+                          `);
+                        }
+                      }
+                    } catch (error) {
+                      alert('Lỗi khi test QR Bank: ' + (error instanceof Error ? error.message : String(error)));
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Test QR Bank
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/printer/enhanced/bank-config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          vietqr: {
+                            bankId: '970422',
+                            accountNumber: '1903xxxxxx',
+                            accountName: 'NGUYEN VAN A',
+                            template: 'compact2'
+                          },
+                          vnpay: {
+                            merchantCode: 'YOUR_VNPAY_MERCHANT_CODE',
+                            terminalId: 'YOUR_VNPAY_TERMINAL_ID',
+                            checksumKey: 'YOUR_VNPAY_CHECKSUM_KEY'
+                          },
+                          momo: {
+                            phoneNumber: '09xxxxxxxx',
+                            name: 'NGUYEN VAN A'
+                          }
+                        })
+                      });
+                      if (response.ok) {
+                        alert('Cấu hình ngân hàng đã được lưu!');
+                      }
+                    } catch (error) {
+                      alert('Lỗi khi lưu cấu hình ngân hàng: ' + (error instanceof Error ? error.message : String(error)));
+                    }
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  Lưu cấu hình ngân hàng
                 </button>
               </div>
             </div>
@@ -1443,6 +1698,319 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+            </div>
+          </div>
+        )}
+
+        {/* Receipt Settings Tab */}
+        {activeTab === 'receipt-settings' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Cấu hình thiết kế hóa đơn</h2>
+              <p className="text-gray-600 mb-6">
+                Tùy chỉnh giao diện và nội dung hóa đơn in trên máy Xprinter T80L
+              </p>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Header Settings */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Thông tin cửa hàng</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Logo/Icon</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="🍽️"
+                        defaultValue="🍽️"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên cửa hàng</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="NHÀ TÔI ERP"
+                        defaultValue="NHÀ TÔI ERP"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Slogan</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Hệ thống quản lý quán ăn"
+                        defaultValue="Hệ thống quản lý quán ăn"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="123 Đường ABC, Quận XYZ, TP.HCM"
+                        defaultValue="123 Đường ABC, Quận XYZ, TP.HCM"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="0123 456 789"
+                        defaultValue="0123 456 789"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input
+                        type="email"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="info@nhatoi-erp.com"
+                        defaultValue="info@nhatoi-erp.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="www.nhatoi-erp.com"
+                        defaultValue="www.nhatoi-erp.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Receipt Info Settings */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Thông tin hóa đơn</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị số hóa đơn</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị bàn</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị khách hàng</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị ngày</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị giờ</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị thu ngân</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Style Settings */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Thiết kế</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Khổ giấy</label>
+                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="58">58mm</option>
+                        <option value="80" selected>80mm</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Kích thước chữ</label>
+                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="small">Nhỏ</option>
+                        <option value="medium" selected>Vừa</option>
+                        <option value="large">Lớn</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">In đậm tiêu đề</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">In đậm tổng cộng</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị viền</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị đường phân cách</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Chế độ compact (tiết kiệm giấy)</label>
+                      <input type="checkbox" className="rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tối đa ký tự tên món</label>
+                      <input
+                        type="number"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="20"
+                        defaultValue="20"
+                        min="10"
+                        max="30"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Settings */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Chân trang</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị thuế</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị giảm giá</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị tổng cộng</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị QR code</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-medium text-gray-700">Hiển thị thông tin ngân hàng</label>
+                      <input type="checkbox" defaultChecked className="rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Lời nhắn tùy chỉnh</label>
+                      <textarea
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows={3}
+                        placeholder="Cảm ơn quý khách đã sử dụng dịch vụ!"
+                        defaultValue="Cảm ơn quý khách đã sử dụng dịch vụ!"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Lời cảm ơn</label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Hẹn gặp lại!"
+                        defaultValue="Hẹn gặp lại!"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button
+                  onClick={async () => {
+                    try {
+                      // TODO: Implement save receipt config
+                      alert('Cấu hình hóa đơn đã được lưu!');
+                    } catch (error) {
+                      alert('Lỗi khi lưu cấu hình hóa đơn: ' + (error instanceof Error ? error.message : String(error)));
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Lưu cấu hình hóa đơn
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      // TODO: Implement reset receipt config
+                      alert('Cấu hình hóa đơn đã được reset về mặc định!');
+                    } catch (error) {
+                      alert('Lỗi khi reset cấu hình hóa đơn: ' + (error instanceof Error ? error.message : String(error)));
+                    }
+                  }}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Reset về mặc định
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      // Test print receipt
+                      const response = await fetch('/api/printer/xprinter/content/test-order', {
+                        method: 'POST'
+                      });
+                      
+                      if (response.ok) {
+                        const receiptText = await response.text();
+                        const blob = new Blob([receiptText], { type: 'text/plain' });
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'test-receipt.txt';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                        alert('File hóa đơn mẫu đã được tải xuống!');
+                      } else {
+                        alert('Lỗi khi tạo hóa đơn mẫu');
+                      }
+                    } catch (error) {
+                      alert('Lỗi khi tạo hóa đơn mẫu: ' + (error instanceof Error ? error.message : String(error)));
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Xem trước hóa đơn
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      // Lấy thông tin kích thước hóa đơn
+                      const response = await fetch('/api/printer/xprinter/size-info/test-order', {
+                        method: 'POST'
+                      });
+                      
+                      if (response.ok) {
+                        const result = await response.json();
+                        const sizeInfo = result.sizeInfo;
+                        alert(`📏 Thông tin kích thước hóa đơn:\n\n` +
+                              `📐 Chiều rộng: ${sizeInfo.width}mm\n` +
+                              `📏 Chiều dài ước tính: ${sizeInfo.estimatedLength}mm\n` +
+                              `🍽️ Số món ăn: ${sizeInfo.itemCount}\n` +
+                              `⚙️ Chế độ: ${sizeInfo.compactMode ? 'Compact' : 'Bình thường'}\n` +
+                              `📋 Loại hóa đơn: ${sizeInfo.estimatedReceiptType}`);
+                      } else {
+                        alert('Lỗi khi lấy thông tin kích thước hóa đơn');
+                      }
+                    } catch (error) {
+                      alert('Lỗi khi lấy thông tin kích thước: ' + (error instanceof Error ? error.message : String(error)));
+                    }
+                  }}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Thông tin kích thước
+                </button>
+              </div>
             </div>
           </div>
         )}

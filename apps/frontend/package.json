@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "dev:ngrok": "node start-ngrok.js",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-3002}",
+    "start:prod": "next start -p 3002",
     "start:ngrok": "node start-ngrok.js",
     "lint": "next lint",
     "type-check": "tsc --noEmit"

@@ -219,7 +219,22 @@ export default function PosPage() {
       console.log('🔐 User role:', user?.role);
       // console.log('🛡️ User permissions:', user?.permissions);
       
-      await api.post('/pos/orders', orderData);
+      const response = await api.post('/pos/orders', orderData);
+      const orderId = response.data.id;
+      
+      // Tính thuế cho order vừa tạo
+      try {
+        await api.post('/printer/enhanced/calculate-tax', {
+          subtotal: cart.reduce((total, item) => {
+            const menuItem = menu.find(m => m.id === item.menuId);
+            return total + (menuItem ? Number(menuItem.price) * item.quantity : 0);
+          }, 0),
+          orderId: orderId
+        });
+      } catch (taxError) {
+        console.warn('Could not calculate tax for order:', taxError);
+      }
+      
       alert('Đơn hàng đã được tạo thành công!');
 
       // Clear cart after successful order
@@ -903,10 +918,12 @@ export default function PosPage() {
                 <span>Tạm tính:</span>
                 <span>{Number(billData.subtotal).toLocaleString('vi-VN')} ₫</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>Thuế (10%):</span>
-                <span>{Number(billData.tax).toLocaleString('vi-VN')} ₫</span>
-              </div>
+              {Number(billData.tax) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>Thuế:</span>
+                  <span>{Number(billData.tax).toLocaleString('vi-VN')} ₫</span>
+                </div>
+              )}
               {billData.discount > 0 && (
                 <div className="flex justify-between text-sm text-red-600">
                   <span>Giảm giá:</span>
@@ -963,43 +980,59 @@ export default function PosPage() {
               <button
                 onClick={async () => {
                   try {
-                    // Gọi API in hóa đơn mới với QR code
-                    const response = await fetch('/api/printer/enhanced/receipt', {
+                    // Gọi API in hóa đơn Xprinter T80L
+                    const response = await fetch(`/api/printer/xprinter/print/${billData.id}`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ 
-                        orderId: billData.id,
-                        customConfig: {
-                          qrCode: { enabled: true },
-                          footer: { showQR: true, customMessage: 'Cảm ơn quý khách!' }
-                        }
+                        printerIP: '192.168.1.100', // IP máy in Xprinter T80L
+                        printerPort: 9100
                       })
                     });
                     
                     if (response.ok) {
-                      const receiptText = await response.text();
-                      const blob = new Blob([receiptText], { type: 'text/plain' });
-                      const url = window.URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `receipt-${billData.orderNumber}.txt`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      window.URL.revokeObjectURL(url);
+                      const result = await response.json();
+                      alert('Hóa đơn đã được gửi tới máy in Xprinter T80L!');
                     } else {
-                      // Fallback to window.print() if API fails
-                      window.print();
+                      // Fallback: tạo file hóa đơn để in thủ công
+                      const fileResponse = await fetch(`/api/printer/xprinter/generate/${billData.id}`, {
+                        method: 'POST'
+                      });
+                      
+                      if (fileResponse.ok) {
+                        const fileResult = await fileResponse.json();
+                        alert(`Không thể kết nối máy in. File hóa đơn đã được tạo: ${fileResult.filePath}`);
+                      } else {
+                        // Fallback cuối cùng: tải nội dung hóa đơn
+                        const contentResponse = await fetch(`/api/printer/xprinter/content/${billData.id}`, {
+                          method: 'POST'
+                        });
+                        
+                        if (contentResponse.ok) {
+                          const receiptText = await contentResponse.text();
+                          const blob = new Blob([receiptText], { type: 'text/plain' });
+                          const url = window.URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `receipt-${billData.orderNumber}.txt`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          window.URL.revokeObjectURL(url);
+                          alert('File hóa đơn đã được tải xuống. Copy nội dung vào máy in Xprinter T80L.');
+                        } else {
+                          alert('Lỗi khi tạo hóa đơn. Vui lòng thử lại.');
+                        }
+                      }
                     }
                   } catch (error) {
                     console.error('Error printing receipt:', error);
-                    // Fallback to window.print() if API fails
-                    window.print();
+                    alert('Lỗi khi in hóa đơn: ' + (error instanceof Error ? error.message : String(error)));
                   }
                 }}
                 className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
               >
-                In hóa đơn
+                In hóa đơn Xprinter
               </button>
               <button
                 onClick={() => setShowBill(false)}
