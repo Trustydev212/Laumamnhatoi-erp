@@ -15,17 +15,34 @@ async function bootstrap() {
   app.use(helmet());
   app.use(compression());
 
-  // CORS - Allow ngrok and localhost (including mobile)
+  // CORS - Dynamic origin handling for production and development
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3002',
-      'http://localhost:3001',
-      'https://ungained-larissa-ligniform.ngrok-free.dev',
-      /^https:\/\/.*\.ngrok-free\.dev$/,
-      /^https:\/\/.*\.ngrok\.io$/,
-      /^https:\/\/.*\.ngrok\.app$/
-    ],
+    origin: (origin, callback) => {
+      const whitelist = [
+        'http://36.50.27.82:3002',
+        'http://36.50.27.82:3001',
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:3002',
+        'https://ungained-larissa-ligniform.ngrok-free.dev',
+      ];
+      
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      // Check if origin is in whitelist
+      if (whitelist.includes(origin)) return callback(null, true);
+      
+      // Check ngrok patterns
+      if (/^https:\/\/.*\.ngrok-free\.dev$/.test(origin) ||
+          /^https:\/\/.*\.ngrok\.io$/.test(origin) ||
+          /^https:\/\/.*\.ngrok\.app$/.test(origin)) {
+        return callback(null, true);
+      }
+      
+      console.warn(`❌ Blocked by CORS: ${origin}`);
+      return callback(new Error('Not allowed by CORS'), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: [

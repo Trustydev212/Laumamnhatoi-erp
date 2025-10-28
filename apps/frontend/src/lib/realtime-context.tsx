@@ -19,10 +19,24 @@ export function RealtimeProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
+    // Dynamic WebSocket URL based on environment
+    const wsUrl = (() => {
+      if (typeof window === 'undefined') return 'ws://localhost:3001';
+      
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'ws://localhost:3001';
+      } else {
+        return 'ws://36.50.27.82:3001';
+      }
+    })();
+    
+    console.log(`🔌 Connecting to WebSocket: ${wsUrl}`);
+    
     const newSocket = io(wsUrl, {
       transports: ['websocket'],
       autoConnect: true,
+      withCredentials: true,
     });
 
     newSocket.on('connect', () => {

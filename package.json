@@ -16,7 +16,12 @@
     "db:generate": "cd apps/backend && npx prisma generate",
     "db:push": "cd apps/backend && npx prisma db push",
     "db:migrate": "cd apps/backend && npx prisma migrate dev",
-    "db:studio": "cd apps/backend && npx prisma studio"
+    "db:studio": "cd apps/backend && npx prisma studio",
+    "deploy": "npm run build && npm run restart",
+    "restart": "pm2 delete all && pkill -9 -f 'node dist/main' || true && pm2 start ecosystem.config.js && pm2 save",
+    "stop": "pm2 stop all",
+    "logs": "pm2 logs --lines 50",
+    "status": "pm2 status"
   },
   "devDependencies": {
     "@types/node": "^20.8.0",
