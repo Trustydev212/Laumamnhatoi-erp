@@ -323,26 +323,7 @@ export default function PosPage() {
       }
       
       // Show success message
-      alert('Thanh toán thành công! Đang tạo hóa đơn...');
-      
-      // Auto print receipt
-      try {
-        const printResponse = await fetch(`/api/printer/xprinter/print/${currentOrder.id}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({})
-        });
-        
-        if (printResponse.ok) {
-          const printResult = await printResponse.json();
-          alert(`Thanh toán thành công!\n\n${printResult.message}`);
-        } else {
-          alert('Thanh toán thành công! Nhưng có lỗi khi in hóa đơn.');
-        }
-      } catch (printError) {
-        console.error('Print error:', printError);
-        alert('Thanh toán thành công! Nhưng có lỗi khi in hóa đơn.');
-      }
+      alert('Thanh toán thành công!');
       
       // Show bill with order data
       setBillData(updatedOrder.data);
@@ -943,6 +924,13 @@ export default function PosPage() {
                   <span>{Number(billData.tax).toLocaleString('vi-VN')} ₫</span>
                 </div>
               )}
+              {/* Debug: Hiển thị giá trị thuế để kiểm tra */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Debug - Tax value:</span>
+                  <span>{JSON.stringify(billData.tax)}</span>
+                </div>
+              )}
               {billData.discount && billData.discount > 0 && (
                 <div className="flex justify-between text-sm text-red-600">
                   <span>Giảm giá:</span>
@@ -999,50 +987,55 @@ export default function PosPage() {
               <button
                 onClick={async () => {
                   try {
-                    // Gọi API in hóa đơn Xprinter T80L
-                    const response = await fetch(`/api/printer/xprinter/print/${billData.id}`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ 
-                        printerIP: '192.168.1.100', // IP máy in Xprinter T80L
-                        printerPort: 9100
-                      })
+                    // Tạo hóa đơn và hiển thị hộp thoại in
+                    const response = await fetch(`/api/printer/xprinter/content/${billData.id}`, {
+                      method: 'GET'
                     });
                     
                     if (response.ok) {
-                      const result = await response.json();
-                      alert('Hóa đơn đã được gửi tới máy in Xprinter T80L!');
-                    } else {
-                      // Fallback: tạo file hóa đơn để in thủ công
-                      const fileResponse = await fetch(`/api/printer/xprinter/generate/${billData.id}`, {
-                        method: 'POST'
-                      });
+                      const receiptContent = await response.text();
                       
-                      if (fileResponse.ok) {
-                        const fileResult = await fileResponse.json();
-                        alert(`Không thể kết nối máy in. File hóa đơn đã được tạo: ${fileResult.filePath}`);
-                      } else {
-                        // Fallback cuối cùng: tải nội dung hóa đơn
-                        const contentResponse = await fetch(`/api/printer/xprinter/content/${billData.id}`, {
-                          method: 'POST'
-                        });
-                        
-                        if (contentResponse.ok) {
-                          const receiptText = await contentResponse.text();
-                          const blob = new Blob([receiptText], { type: 'text/plain' });
-                          const url = window.URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `receipt-${billData.orderNumber}.txt`;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          window.URL.revokeObjectURL(url);
-                          alert('File hóa đơn đã được tải xuống. Copy nội dung vào máy in Xprinter T80L.');
-                        } else {
-                          alert('Lỗi khi tạo hóa đơn. Vui lòng thử lại.');
-                        }
+                      // Mở hộp thoại in của trình duyệt
+                      const printWindow = window.open('', '_blank');
+                      if (printWindow) {
+                        printWindow.document.write(`
+                          <html>
+                            <head>
+                              <title>In hóa đơn - ${billData.orderNumber}</title>
+                              <style>
+                                body { 
+                                  font-family: 'Courier New', monospace; 
+                                  font-size: 12px; 
+                                  line-height: 1.2; 
+                                  margin: 0;
+                                  padding: 20px;
+                                }
+                                pre { 
+                                  white-space: pre-wrap; 
+                                  word-wrap: break-word; 
+                                  margin: 0;
+                                }
+                                @media print {
+                                  body { margin: 0; padding: 0; }
+                                }
+                              </style>
+                            </head>
+                            <body>
+                              <pre>${receiptContent}</pre>
+                              <script>
+                                window.onload = function() {
+                                  window.print();
+                                }
+                              </script>
+                            </body>
+                          </html>
+                        `);
+                        printWindow.document.close();
                       }
+                      
+                      alert('Hóa đơn đã được tạo! Hộp thoại in sẽ mở tự động. Chọn máy in Xprinter T80L để in.');
+                    } else {
+                      alert('Lỗi khi tạo hóa đơn. Vui lòng thử lại.');
                     }
                   } catch (error) {
                     console.error('Error printing receipt:', error);
