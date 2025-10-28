@@ -358,42 +358,6 @@ export class XprinterReceiptService {
     return { width, estimatedLength };
   }
 
-  // Gửi hóa đơn trực tiếp tới máy in
-  async printReceipt(orderId: string, printerIP: string = '192.168.1.100', printerPort: number = 9100): Promise<boolean> {
-    try {
-      const receipt = await this.generateReceipt(orderId);
-      
-      // Gửi dữ liệu ESC/POS tới máy in qua TCP
-      const net = require('net');
-      const client = new net.Socket();
-      
-      return new Promise((resolve, reject) => {
-        client.connect(printerPort, printerIP, () => {
-          console.log('Connected to printer');
-          client.write(receipt, 'utf8', () => {
-            console.log('Receipt sent to printer');
-            client.destroy();
-            resolve(true);
-          });
-        });
-        
-        client.on('error', (err) => {
-          console.error('Printer connection error:', err);
-          client.destroy();
-          reject(err);
-        });
-        
-        client.on('close', () => {
-          console.log('Printer connection closed');
-        });
-      });
-      
-    } catch (error) {
-      console.error('Error printing receipt:', error);
-      throw new Error('Failed to print receipt');
-    }
-  }
-
   // Tạo file hóa đơn để in thủ công
   async generateReceiptFile(orderId: string): Promise<string> {
     try {
