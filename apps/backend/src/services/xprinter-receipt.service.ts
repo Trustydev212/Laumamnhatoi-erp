@@ -17,20 +17,26 @@ export class XprinterReceiptService {
   // Tạo hóa đơn ESC/POS cho máy in Xprinter T80L với thiết kế đẹp
   async generateReceipt(orderId: string): Promise<string> {
     try {
-      // Lấy thông tin order
-      const order = await this.prisma.order.findUnique({
-        where: { id: orderId },
-        include: {
-          table: true,
-          orderItems: {
-            include: {
-              menu: true
-            }
-          },
-          customer: true,
-          user: true // Cashier info
-        }
-      });
+      let order;
+      
+      if (orderId === 'test-order') {
+        order = await this.createTestOrder();
+      } else {
+        // Lấy thông tin order
+        order = await this.prisma.order.findUnique({
+          where: { id: orderId },
+          include: {
+            table: true,
+            orderItems: {
+              include: {
+                menu: true
+              }
+            },
+            customer: true,
+            user: true // Cashier info
+          }
+        });
+      }
 
       if (!order) {
         throw new Error('Order not found');
@@ -216,9 +222,12 @@ export class XprinterReceiptService {
     // Tạm tính
     calc += `💰 Tạm tính: ${Number(order.subtotal).toLocaleString('vi-VN')} VNĐ\n`;
     
-    // Thuế
-    if (config.footer.showTax && Number(order.tax) > 0) {
-      calc += `📊 Thuế VAT (${taxConfig.vatRate}%): ${Number(order.tax).toLocaleString('vi-VN')} VNĐ\n`;
+    // Thuế - chỉ hiển thị khi có thuế và thuế > 0
+    const taxAmount = Number(order.tax) || 0;
+    const taxRate = Number(taxConfig.vatRate) || 0;
+    
+    if (config.footer.showTax && taxAmount > 0 && taxRate > 0) {
+      calc += `📊 Thuế VAT (${taxRate}%): ${taxAmount.toLocaleString('vi-VN')} VNĐ\n`;
     }
     
     // Giảm giá
@@ -405,19 +414,106 @@ export class XprinterReceiptService {
     }
   }
 
+  // In hóa đơn trực tiếp lên máy in Xprinter T80L
+  async printReceipt(orderId: string): Promise<{ success: boolean; message: string; filePath?: string }> {
+    try {
+      const receipt = await this.generateReceipt(orderId);
+      
+      // Tạo file tạm để lưu hóa đơn
+      const timestamp = Date.now();
+      const fileName = `receipt-${orderId}-${timestamp}.txt`;
+      const filePath = `/tmp/${fileName}`;
+      
+      // Ghi file hóa đơn
+      const fs = require('fs');
+      fs.writeFileSync(filePath, receipt, 'utf8');
+      
+      // TODO: Thêm logic kết nối máy in thực tế
+      // Hiện tại chỉ tạo file, chưa gửi đến máy in
+      console.log(`Receipt file created: ${filePath}`);
+      
+      return {
+        success: true,
+        message: `Hóa đơn đã được tạo thành công. File: ${filePath}`,
+        filePath: filePath
+      };
+    } catch (error) {
+      console.error('Error printing receipt:', error);
+      return {
+        success: false,
+        message: `Lỗi khi in hóa đơn: ${error.message}`
+      };
+    }
+  }
+
+  // Tạo order test để demo
+  async createTestOrder(): Promise<any> {
+    return {
+      id: 'test-order',
+      orderNumber: 'HD001',
+      createdAt: new Date(),
+      subtotal: 150000,
+      tax: 0, // Không thuế
+      discount: 5000,
+      total: 145000,
+      table: {
+        name: 'Bàn 1'
+      },
+      customer: {
+        name: 'Nguyễn Văn A'
+      },
+      user: {
+        firstName: 'Thu',
+        lastName: 'Ngân'
+      },
+      orderItems: [
+        {
+          quantity: 2,
+          price: 45000,
+          subtotal: 90000,
+          menu: {
+            name: 'Phở Bò'
+          }
+        },
+        {
+          quantity: 1,
+          price: 50000,
+          subtotal: 50000,
+          menu: {
+            name: 'Bún Bò Huế'
+          }
+        },
+        {
+          quantity: 2,
+          price: 15000,
+          subtotal: 30000,
+          menu: {
+            name: 'Nước Cam'
+          }
+        }
+      ]
+    };
+  }
+
   // Lấy thông tin kích thước hóa đơn
   async getReceiptSizeInfo(orderId: string): Promise<{ width: number; estimatedLength: number; itemCount: number; compactMode: boolean }> {
     try {
-      const order = await this.prisma.order.findUnique({
-        where: { id: orderId },
-        include: {
-          orderItems: {
-            include: {
-              menu: true
+      let order;
+      
+      if (orderId === 'test-order') {
+        order = await this.createTestOrder();
+      } else {
+        order = await this.prisma.order.findUnique({
+          where: { id: orderId },
+          include: {
+            orderItems: {
+              include: {
+                menu: true
+              }
             }
           }
-        }
-      });
+        });
+      }
 
       if (!order) {
         throw new Error('Order not found');

@@ -2,16 +2,33 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class BankQRService {
-  // Cấu hình ngân hàng
+  // Danh sách ngân hàng hỗ trợ VietQR
+  private bankList = [
+    { id: '970436', name: 'Vietcombank', code: 'VCB' },
+    { id: '970407', name: 'Techcombank', code: 'TCB' },
+    { id: '970418', name: 'BIDV', code: 'BIDV' },
+    { id: '970405', name: 'Agribank', code: 'AGB' },
+    { id: '970422', name: 'MB Bank', code: 'MBB' },
+    { id: '970432', name: 'VPBank', code: 'VPB' },
+    { id: '970416', name: 'ACB', code: 'ACB' },
+    { id: '970415', name: 'VietinBank', code: 'CTG' },
+    { id: '970409', name: 'Sacombank', code: 'STB' },
+    { id: '970428', name: 'HDBank', code: 'HDB' }
+  ];
+
+  // Cấu hình ngân hàng mặc định
   private bankConfig = {
-    bankCode: '970415', // Vietcombank
+    bankId: '970422', // MB Bank mặc định
+    bankName: 'MB Bank',
     accountNumber: '1234567890',
     accountName: 'NGUYEN VAN A',
-    template: 'compact2', // compact2, compact, qr_only
-    amount: 0,
-    description: '',
-    purpose: 'Thanh toan hoa don'
+    template: 'compact2'
   };
+
+  // Lấy danh sách ngân hàng
+  getBankList() {
+    return this.bankList;
+  }
 
   // Tạo QR code ngân hàng theo chuẩn VietQR
   generateBankQR(amount: number, description: string = '', purpose: string = 'Thanh toan hoa don'): string {
@@ -23,80 +40,25 @@ export class BankQRService {
     return vietQRUrl;
   }
 
-  // Tạo QR code ngân hàng theo chuẩn VNPay
-  generateVNPayQR(amount: number, description: string = ''): string {
-    const config = { ...this.bankConfig, amount, description };
-    
-    // Tạo URL VNPay QR
-    const vnpayQRUrl = this.buildVNPayQRUrl(config);
-    
-    return vnpayQRUrl;
-  }
-
-  // Tạo QR code ngân hàng theo chuẩn Momo
-  generateMomoQR(amount: number, description: string = ''): string {
-    const config = { ...this.bankConfig, amount, description };
-    
-    // Tạo URL Momo QR
-    const momoQRUrl = this.buildMomoQRUrl(config);
-    
-    return momoQRUrl;
-  }
-
   // Build VietQR URL
   private buildVietQRUrl(config: any): string {
     const baseUrl = 'https://img.vietqr.io/image';
-    const params = new URLSearchParams({
-      bank: config.bankCode,
-      account: config.accountNumber,
-      name: config.accountName,
-      amount: config.amount.toString(),
-      template: config.template,
-      description: config.description
-    });
+    const bankId = config.bankId || this.bankConfig.bankId;
+    const accountNumber = config.accountNumber || this.bankConfig.accountNumber;
+    const template = config.template || this.bankConfig.template;
     
-    return `${baseUrl}?${params.toString()}`;
-  }
-
-  // Build VNPay QR URL
-  private buildVNPayQRUrl(config: any): string {
-    const baseUrl = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
-    const params = new URLSearchParams({
-      vnp_Amount: (config.amount * 100).toString(), // VNPay yêu cầu amount * 100
-      vnp_Command: 'pay',
-      vnp_CreateDate: new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + '00',
-      vnp_CurrCode: 'VND',
-      vnp_IpAddr: '127.0.0.1',
-      vnp_Locale: 'vn',
-      vnp_OrderInfo: config.description,
-      vnp_OrderType: 'other',
-      vnp_ReturnUrl: 'http://localhost:3000/payment/return',
-      vnp_TmnCode: 'YOUR_TMN_CODE', // Cần thay bằng TMN code thực
-      vnp_TxnRef: Date.now().toString(),
-      vnp_Version: '2.1.0'
-    });
+    const params = new URLSearchParams();
+    if (config.amount && config.amount > 0) {
+      params.append('amount', config.amount.toString());
+    }
+    if (config.description) {
+      params.append('addInfo', config.description);
+    }
     
-    return `${baseUrl}?${params.toString()}`;
-  }
-
-  // Build Momo QR URL
-  private buildMomoQRUrl(config: any): string {
-    const baseUrl = 'https://payment.momo.vn/v2/gateway/api/create';
-    const params = new URLSearchParams({
-      partnerCode: 'YOUR_PARTNER_CODE', // Cần thay bằng partner code thực
-      accessKey: 'YOUR_ACCESS_KEY', // Cần thay bằng access key thực
-      requestId: Date.now().toString(),
-      amount: config.amount.toString(),
-      orderId: Date.now().toString(),
-      orderInfo: config.description,
-      returnUrl: 'http://localhost:3000/payment/return',
-      notifyUrl: 'http://localhost:3000/payment/notify',
-      extraData: '',
-      requestType: 'captureMoMoWallet',
-      signature: 'YOUR_SIGNATURE' // Cần tính toán signature thực
-    });
+    const queryString = params.toString();
+    const url = `${baseUrl}/${bankId}-${accountNumber}-${template}.png${queryString ? '?' + queryString : ''}`;
     
-    return `${baseUrl}?${params.toString()}`;
+    return url;
   }
 
   // Cập nhật cấu hình ngân hàng
@@ -109,12 +71,10 @@ export class BankQRService {
     return this.bankConfig;
   }
 
-  // Tạo QR code cho nhiều ngân hàng
+  // Tạo QR code cho nhiều ngân hàng (chỉ VietQR)
   generateMultiBankQR(amount: number, description: string = ''): any {
     return {
       vietqr: this.generateBankQR(amount, description),
-      vnpay: this.generateVNPayQR(amount, description),
-      momo: this.generateMomoQR(amount, description),
       amount,
       description,
       timestamp: new Date().toISOString()

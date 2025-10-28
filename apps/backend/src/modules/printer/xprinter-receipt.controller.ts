@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res, Param } from '@nestjs/common';
+import { Controller, Post, Body, Res, Param, Get } from '@nestjs/common';
 import { Response } from 'express';
 import { XprinterReceiptService } from '../../services/xprinter-receipt.service';
 
@@ -14,24 +14,12 @@ export class XprinterReceiptController {
     @Res() res: Response
   ) {
     try {
-      const { printerIP = '192.168.1.100', printerPort = 9100 } = body;
+      const result = await this.xprinterReceiptService.printReceipt(orderId);
       
-      const success = await this.xprinterReceiptService.printReceipt(
-        orderId, 
-        printerIP, 
-        printerPort
-      );
-      
-      if (success) {
-        res.json({ 
-          success: true, 
-          message: 'Receipt sent to printer successfully' 
-        });
+      if (result.success) {
+        res.json(result);
       } else {
-        res.status(500).json({ 
-          success: false, 
-          message: 'Failed to send receipt to printer' 
-        });
+        res.status(500).json(result);
       }
     } catch (error) {
       console.error('Print receipt error:', error);
@@ -65,8 +53,32 @@ export class XprinterReceiptController {
     }
   }
 
+  // Lấy nội dung hóa đơn để xem trước
+  @Get('content/:orderId')
+  async getReceiptContent(
+    @Param('orderId') orderId: string,
+    @Res() res: Response
+  ) {
+    try {
+      const receiptContent = await this.xprinterReceiptService.generateReceipt(orderId);
+      
+      res.set({
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Length': receiptContent.length
+      });
+      
+      res.send(receiptContent);
+    } catch (error) {
+      console.error('Get receipt content error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Error getting receipt content: ' + error.message 
+      });
+    }
+  }
+
   // Lấy thông tin kích thước hóa đơn
-  @Post('size-info/:orderId')
+  @Get('size-info/:orderId')
   async getReceiptSizeInfo(
     @Param('orderId') orderId: string,
     @Res() res: Response
@@ -74,16 +86,7 @@ export class XprinterReceiptController {
     try {
       const sizeInfo = await this.xprinterReceiptService.getReceiptSizeInfo(orderId);
       
-      res.json({ 
-        success: true, 
-        sizeInfo: {
-          width: sizeInfo.width,
-          estimatedLength: sizeInfo.estimatedLength,
-          itemCount: sizeInfo.itemCount,
-          compactMode: sizeInfo.compactMode,
-          estimatedReceiptType: this.getReceiptType(sizeInfo.estimatedLength)
-        }
-      });
+      res.json(sizeInfo);
     } catch (error) {
       console.error('Get receipt size info error:', error);
       res.status(500).json({ 

@@ -323,7 +323,26 @@ export default function PosPage() {
       }
       
       // Show success message
-      alert('Thanh toán thành công! Hóa đơn sẽ được hiển thị.');
+      alert('Thanh toán thành công! Đang tạo hóa đơn...');
+      
+      // Auto print receipt
+      try {
+        const printResponse = await fetch(`/api/printer/xprinter/print/${currentOrder.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        
+        if (printResponse.ok) {
+          const printResult = await printResponse.json();
+          alert(`Thanh toán thành công!\n\n${printResult.message}`);
+        } else {
+          alert('Thanh toán thành công! Nhưng có lỗi khi in hóa đơn.');
+        }
+      } catch (printError) {
+        console.error('Print error:', printError);
+        alert('Thanh toán thành công! Nhưng có lỗi khi in hóa đơn.');
+      }
       
       // Show bill with order data
       setBillData(updatedOrder.data);
@@ -918,13 +937,13 @@ export default function PosPage() {
                 <span>Tạm tính:</span>
                 <span>{Number(billData.subtotal).toLocaleString('vi-VN')} ₫</span>
               </div>
-              {Number(billData.tax) > 0 && (
+              {billData.tax && Number(billData.tax) > 0 && (
                 <div className="flex justify-between text-sm">
                   <span>Thuế:</span>
                   <span>{Number(billData.tax).toLocaleString('vi-VN')} ₫</span>
                 </div>
               )}
-              {billData.discount > 0 && (
+              {billData.discount && billData.discount > 0 && (
                 <div className="flex justify-between text-sm text-red-600">
                   <span>Giảm giá:</span>
                   <span>-{Number(billData.discount).toLocaleString('vi-VN')} ₫</span>

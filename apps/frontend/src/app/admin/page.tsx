@@ -1272,106 +1272,93 @@ export default function AdminPage() {
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold mb-4">Cấu hình thông tin ngân hàng</h2>
               <p className="text-gray-600 mb-6">
-                Thiết lập thông tin ngân hàng để tạo QR code thanh toán
+                Thiết lập thông tin ngân hàng để tạo QR code thanh toán VietQR
               </p>
               
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="max-w-md space-y-4">
                 {/* VietQR Configuration */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-medium">VietQR (Techcombank)</h3>
+                  <h3 className="text-lg font-medium">VietQR</h3>
                   <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Chọn ngân hàng</label>
+                      <select 
+                        id="bankSelect"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onChange={(e) => {
+                          const selectedBank = e.target.value;
+                          const bankIdInput = document.getElementById('bankId') as HTMLInputElement;
+                          const bankNameInput = document.getElementById('bankName') as HTMLInputElement;
+                          if (bankIdInput && bankNameInput) {
+                            bankIdInput.value = selectedBank;
+                            bankNameInput.value = e.target.selectedOptions[0].text;
+                          }
+                        }}
+                      >
+                        <option value="970436">Vietcombank</option>
+                        <option value="970407">Techcombank</option>
+                        <option value="970418">BIDV</option>
+                        <option value="970405">Agribank</option>
+                        <option value="970422" selected>MB Bank</option>
+                        <option value="970432">VPBank</option>
+                        <option value="970416">ACB</option>
+                        <option value="970415">VietinBank</option>
+                        <option value="970409">Sacombank</option>
+                        <option value="970428">HDBank</option>
+                      </select>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Bank ID</label>
                       <input
+                        id="bankId"
                         type="text"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="970422"
                         defaultValue="970422"
+                        readOnly
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên ngân hàng</label>
+                      <input
+                        id="bankName"
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="MB Bank"
+                        defaultValue="MB Bank"
+                        readOnly
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Số tài khoản</label>
                       <input
+                        id="accountNumber"
                         type="text"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="1903xxxxxx"
-                        defaultValue="1903xxxxxx"
+                        placeholder="Nhập số tài khoản thật"
+                        defaultValue=""
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Tên chủ tài khoản</label>
                       <input
+                        id="accountName"
                         type="text"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="NGUYEN VAN A"
-                        defaultValue="NGUYEN VAN A"
+                        placeholder="Nhập tên thật của bạn"
+                        defaultValue=""
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Template</label>
-                      <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="compact2">Compact2</option>
+                      <select 
+                        id="template"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="compact2" selected>Compact2 (Khuyến nghị)</option>
                         <option value="compact">Compact</option>
+                        <option value="qr_only">QR Only</option>
                       </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* VNPAY Configuration */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">VNPAY</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Merchant Code</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="YOUR_VNPAY_MERCHANT_CODE"
-                        defaultValue="YOUR_VNPAY_MERCHANT_CODE"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Terminal ID</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="YOUR_VNPAY_TERMINAL_ID"
-                        defaultValue="YOUR_VNPAY_TERMINAL_ID"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Checksum Key</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="YOUR_VNPAY_CHECKSUM_KEY"
-                        defaultValue="YOUR_VNPAY_CHECKSUM_KEY"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* MoMo Configuration */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">MoMo</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="09xxxxxxxx"
-                        defaultValue="09xxxxxxxx"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên chủ tài khoản</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="NGUYEN VAN A"
-                        defaultValue="NGUYEN VAN A"
-                      />
                     </div>
                   </div>
                 </div>
@@ -1417,29 +1404,32 @@ export default function AdminPage() {
                 <button
                   onClick={async () => {
                     try {
+                      const bankId = (document.getElementById('bankId') as HTMLInputElement)?.value || '970422';
+                      const bankName = (document.getElementById('bankName') as HTMLInputElement)?.value || 'MB Bank';
+                      const accountNumber = (document.getElementById('accountNumber') as HTMLInputElement)?.value || '';
+                      const accountName = (document.getElementById('accountName') as HTMLInputElement)?.value || '';
+                      const template = (document.getElementById('template') as HTMLSelectElement)?.value || 'compact2';
+
+                      if (!accountNumber || !accountName) {
+                        alert('Vui lòng nhập đầy đủ số tài khoản và tên chủ tài khoản!');
+                        return;
+                      }
+
                       const response = await fetch('/api/printer/enhanced/bank-config', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                          vietqr: {
-                            bankId: '970422',
-                            accountNumber: '1903xxxxxx',
-                            accountName: 'NGUYEN VAN A',
-                            template: 'compact2'
-                          },
-                          vnpay: {
-                            merchantCode: 'YOUR_VNPAY_MERCHANT_CODE',
-                            terminalId: 'YOUR_VNPAY_TERMINAL_ID',
-                            checksumKey: 'YOUR_VNPAY_CHECKSUM_KEY'
-                          },
-                          momo: {
-                            phoneNumber: '09xxxxxxxx',
-                            name: 'NGUYEN VAN A'
-                          }
+                          bankId: bankId,
+                          bankName: bankName,
+                          accountNumber: accountNumber,
+                          accountName: accountName,
+                          template: template
                         })
                       });
                       if (response.ok) {
-                        alert('Cấu hình ngân hàng đã được lưu!');
+                        alert('Cấu hình ngân hàng đã được lưu thành công!');
+                      } else {
+                        alert('Lỗi khi lưu cấu hình ngân hàng!');
                       }
                     } catch (error) {
                       alert('Lỗi khi lưu cấu hình ngân hàng: ' + (error instanceof Error ? error.message : String(error)));
@@ -1950,21 +1940,42 @@ export default function AdminPage() {
                     try {
                       // Test print receipt
                       const response = await fetch('/api/printer/xprinter/content/test-order', {
-                        method: 'POST'
+                        method: 'GET'
                       });
                       
                       if (response.ok) {
                         const receiptText = await response.text();
-                        const blob = new Blob([receiptText], { type: 'text/plain' });
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'test-receipt.txt';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        window.URL.revokeObjectURL(url);
-                        alert('File hóa đơn mẫu đã được tải xuống!');
+                        const newWindow = window.open('', '_blank');
+                        if (newWindow) {
+                          newWindow.document.write(`
+                            <html>
+                              <head>
+                                <title>Xem trước hóa đơn</title>
+                                <style>
+                                  body { 
+                                    font-family: 'Courier New', monospace; 
+                                    font-size: 12px; 
+                                    line-height: 1.2; 
+                                    margin: 20px; 
+                                    background: white;
+                                  }
+                                  pre { 
+                                    white-space: pre-wrap; 
+                                    word-wrap: break-word; 
+                                    margin: 0;
+                                  }
+                                </style>
+                              </head>
+                              <body>
+                                <h2>Xem trước hóa đơn</h2>
+                                <div style="border: 1px solid #ccc; padding: 10px; background: #f9f9f9;">
+                                  <pre>${receiptText}</pre>
+                                </div>
+                                <p><small>Đây là bản xem trước. Hóa đơn thực tế sẽ được in trên máy Xprinter T80L.</small></p>
+                              </body>
+                            </html>
+                          `);
+                        }
                       } else {
                         alert('Lỗi khi tạo hóa đơn mẫu');
                       }
@@ -1984,18 +1995,17 @@ export default function AdminPage() {
                     try {
                       // Lấy thông tin kích thước hóa đơn
                       const response = await fetch('/api/printer/xprinter/size-info/test-order', {
-                        method: 'POST'
+                        method: 'GET'
                       });
                       
                       if (response.ok) {
                         const result = await response.json();
-                        const sizeInfo = result.sizeInfo;
+                        const sizeInfo = result;
                         alert(`📏 Thông tin kích thước hóa đơn:\n\n` +
                               `📐 Chiều rộng: ${sizeInfo.width}mm\n` +
                               `📏 Chiều dài ước tính: ${sizeInfo.estimatedLength}mm\n` +
                               `🍽️ Số món ăn: ${sizeInfo.itemCount}\n` +
-                              `⚙️ Chế độ: ${sizeInfo.compactMode ? 'Compact' : 'Bình thường'}\n` +
-                              `📋 Loại hóa đơn: ${sizeInfo.estimatedReceiptType}`);
+                              `⚙️ Chế độ: ${sizeInfo.compactMode ? 'Compact' : 'Bình thường'}`);
                       } else {
                         alert('Lỗi khi lấy thông tin kích thước hóa đơn');
                       }
