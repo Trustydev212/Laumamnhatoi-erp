@@ -987,59 +987,32 @@ export default function PosPage() {
               <button
                 onClick={async () => {
                   try {
-                    // Tạo hóa đơn và hiển thị hộp thoại in
-                    const response = await fetch(`/api/printer/xprinter/content/${billData.id}`, {
+                    // Tạo hóa đơn HTML với QR code thật
+                    const response = await fetch(`/api/printer/html/receipt/${billData.id}`, {
                       method: 'GET'
                     });
                     
                     if (response.ok) {
-                      const receiptContent = await response.text();
+                      const result = await response.json();
                       
-                      // Mở hộp thoại in của trình duyệt
-                      const printWindow = window.open('', '_blank');
-                      if (printWindow) {
-                        printWindow.document.write(`
-                          <html>
-                            <head>
-                              <title>In hóa đơn - ${billData.orderNumber}</title>
-                              <style>
-                                body { 
-                                  font-family: 'Courier New', monospace; 
-                                  font-size: 12px; 
-                                  line-height: 1.2; 
-                                  margin: 0;
-                                  padding: 20px;
-                                }
-                                pre { 
-                                  white-space: pre-wrap; 
-                                  word-wrap: break-word; 
-                                  margin: 0;
-                                }
-                                @media print {
-                                  body { margin: 0; padding: 0; }
-                                }
-                              </style>
-                            </head>
-                            <body>
-                              <pre>${receiptContent}</pre>
-                              <script>
-                                window.onload = function() {
-                                  window.print();
-                                }
-                              </script>
-                            </body>
-                          </html>
-                        `);
-                        printWindow.document.close();
+                      if (result.success) {
+                        // Mở hộp thoại in với HTML receipt
+                        const printWindow = window.open('', '_blank');
+                        if (printWindow) {
+                          printWindow.document.write(result.html);
+                          printWindow.document.close();
+                        }
+                        
+                        alert('Hóa đơn HTML đã được tạo! Hộp thoại in sẽ mở tự động với QR code thật.');
+                      } else {
+                        alert('Lỗi khi tạo hóa đơn HTML: ' + result.message);
                       }
-                      
-                      alert('Hóa đơn đã được tạo! Hộp thoại in sẽ mở tự động. Chọn máy in Xprinter T80L để in.');
                     } else {
-                      alert('Lỗi khi tạo hóa đơn. Vui lòng thử lại.');
+                      alert('Lỗi khi tạo hóa đơn HTML. Vui lòng thử lại.');
                     }
                   } catch (error) {
-                    console.error('Error printing receipt:', error);
-                    alert('Lỗi khi in hóa đơn: ' + (error instanceof Error ? error.message : String(error)));
+                    console.error('Error printing HTML receipt:', error);
+                    alert('Lỗi khi in hóa đơn HTML: ' + (error instanceof Error ? error.message : String(error)));
                   }
                 }}
                 className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"

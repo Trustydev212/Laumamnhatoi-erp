@@ -241,7 +241,9 @@ export class XprinterReceiptService {
       // QR code image với ESC/POS commands
       qr += '\x1B\x61\x01'; // Center alignment
       qr += `[QR CODE IMAGE]\n`;
-      qr += `So tien: ${Number(order.total).toLocaleString('vi-VN')} VND\n`;
+      // Fix: Sử dụng subtotal thay vì total để tránh thuế
+      const qrAmount = taxRate > 0 ? Number(order.total) : Number(order.subtotal);
+      qr += `So tien: ${qrAmount.toLocaleString('vi-VN')} VND\n`;
       
       if (config.footer.showBankInfo) {
         qr += '\x1B\x61\x00'; // Left alignment
