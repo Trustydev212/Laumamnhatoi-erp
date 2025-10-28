@@ -85,98 +85,90 @@ export class XprinterReceiptService {
     }
   }
 
-  // Tạo header đẹp
+  // Tạo header đẹp cho 80mm
   private generateHeader(config: ReceiptConfig): string {
     let header = '';
     
-    // Logo và tiêu đề
+    // Logo và tiêu đề - canh giữa
     header += '\x1B\x61\x01'; // Center alignment
-    if (config.style.boldHeader) {
-      header += '\x1B\x21\x30'; // Double height, double width
-    }
-    header += `${config.header.logo} ${config.header.title}\n`;
+    header += '\x1B\x21\x30'; // Double height, double width
+    header += `${config.header.title}\n`;
     header += '\x1B\x21\x00'; // Normal text
     
     // Subtitle
     header += `${config.header.subtitle}\n`;
     
     // Separator
-    if (config.style.showSeparators) {
-      header += '═══════════════════════════════\n';
-    }
+    header += '═══════════════════════════════\n';
     
-    // Thông tin cửa hàng
+    // Thông tin cửa hàng - canh giữa
     header += `${config.header.address}\n`;
-    header += `📞 ${config.header.phone}\n`;
-    header += `📧 ${config.header.email}\n`;
-    header += `🌐 ${config.header.website}\n`;
+    header += `Tel: ${config.header.phone}\n`;
+    header += `Email: ${config.header.email}\n`;
+    header += `Web: ${config.header.website}\n`;
     
     // Separator
-    if (config.style.showSeparators) {
-      header += '═══════════════════════════════\n';
-    }
+    header += '═══════════════════════════════\n';
     
     return header;
   }
 
-  // Tạo thông tin hóa đơn
+  // Tạo thông tin hóa đơn - tối ưu cho 80mm
   private generateReceiptInfo(order: any, config: ReceiptConfig): string {
     let info = '';
     
     info += '\x1B\x61\x00'; // Left alignment
     
     if (config.receipt.showOrderNumber) {
-      info += `📄 Hóa đơn: ${order.orderNumber}\n`;
+      info += `Hoa don: ${order.orderNumber}\n`;
     }
     
     if (config.receipt.showTable) {
-      info += `🪑 Bàn: ${order.table.name}\n`;
+      info += `Ban: ${order.table.name}\n`;
     }
     
     if (config.receipt.showDate) {
-      info += `📅 Ngày: ${new Date(order.createdAt).toLocaleDateString('vi-VN')}\n`;
+      info += `Ngay: ${new Date(order.createdAt).toLocaleDateString('vi-VN')}\n`;
     }
     
     if (config.receipt.showTime) {
-      info += `🕐 Giờ: ${new Date(order.createdAt).toLocaleTimeString('vi-VN')}\n`;
+      info += `Gio: ${new Date(order.createdAt).toLocaleTimeString('vi-VN')}\n`;
     }
     
     if (config.receipt.showCashier && order.user) {
-      info += `👤 Thu ngân: ${order.user.username}\n`;
+      info += `Thu ngan: ${order.user.username}\n`;
     }
     
     if (config.receipt.showCustomer && order.customer) {
-      info += `👥 Khách hàng: ${order.customer.name}\n`;
+      info += `Khach hang: ${order.customer.name}\n`;
     }
     
     // Separator
-    if (config.style.showSeparators) {
-      info += '───────────────────────────────\n';
-    }
+    info += '───────────────────────────────\n';
     
     return info;
   }
 
-  // Tạo phần danh sách món ăn đẹp như mẫu
+  // Tạo phần danh sách món ăn tối ưu cho 80mm
   private generateItemsSection(order: any, config: ReceiptConfig): string {
     let items = '';
     
-    // Header table đẹp
+    // Header table - tối ưu cho 80mm (32 ký tự)
     items += '\x1B\x21\x08'; // Bold
-    items += 'Tên                    SL   Giá      Tổng\n';
+    items += 'Ten                SL   Gia     Tong\n';
     items += '\x1B\x21\x00'; // Normal
-    items += '─────────────────────────────────────\n';
+    items += '────────────────────────────────\n';
     
-    // Danh sách món ăn
+    // Danh sách món ăn - tối ưu cho 80mm
     order.orderItems.forEach((item: any) => {
-      const name = item.menu.name.length > 15 ? 
-        item.menu.name.substring(0, 15) + '...' : 
+      const name = item.menu.name.length > 12 ? 
+        item.menu.name.substring(0, 12) + '...' : 
         item.menu.name;
       const quantity = item.quantity.toString().padStart(2);
-      const price = Number(item.menu.price || 0).toLocaleString('vi-VN').padStart(8);
-      const total = Number(item.total || 0).toLocaleString('vi-VN').padStart(10);
+      const price = Number(item.menu.price || 0).toLocaleString('vi-VN').padStart(6);
+      const total = Number(item.total || 0).toLocaleString('vi-VN').padStart(8);
       
-      items += `${name.padEnd(20)} ${quantity} ${price} ${total}\n`;
+      items += `${name.padEnd(16)} ${quantity} ${price} ${total}\n`;
     });
     
     items += '═══════════════════════════════\n';
@@ -189,7 +181,7 @@ export class XprinterReceiptService {
     let calc = '';
     
     // Tạm tính
-    calc += `💰 Tạm tính: ${Number(order.subtotal).toLocaleString('vi-VN')} VNĐ\n`;
+    calc += `Tam tinh: ${Number(order.subtotal).toLocaleString('vi-VN')} VND\n`;
     
     // Thuế - chỉ hiển thị khi có thuế và thuế > 0
     const taxAmount = Number(order.tax) || 0;
@@ -205,24 +197,20 @@ export class XprinterReceiptService {
     
     // Chỉ hiển thị thuế khi taxRate > 0 (không phải 0%)
     if (config.footer.showTax && taxRate > 0 && taxAmount > 0) {
-      calc += `📊 Thuế VAT (${taxRate}%): ${taxAmount.toLocaleString('vi-VN')} VNĐ\n`;
+      calc += `Thue VAT (${taxRate}%): ${taxAmount.toLocaleString('vi-VN')} VND\n`;
     }
     
     // Giảm giá
     if (config.footer.showDiscount && Number(order.discount) > 0) {
-      calc += `🎯 Giảm giá: -${Number(order.discount).toLocaleString('vi-VN')} VNĐ\n`;
+      calc += `Giam gia: -${Number(order.discount).toLocaleString('vi-VN')} VND\n`;
     }
     
     // Separator
-    if (config.style.showSeparators) {
-      calc += '═══════════════════════════════\n';
-    }
+    calc += '═══════════════════════════════\n';
     
     // Tổng cộng
-    if (config.style.boldTotal) {
-      calc += '\x1B\x21\x30'; // Double height, double width
-    }
-    calc += `💳 TỔNG CỘNG: ${Number(order.total).toLocaleString('vi-VN')} VNĐ\n`;
+    calc += '\x1B\x21\x30'; // Double height, double width
+    calc += `TONG CONG: ${Number(order.total).toLocaleString('vi-VN')} VND\n`;
     calc += '\x1B\x21\x00'; // Normal
     
     return calc;
@@ -240,7 +228,7 @@ export class XprinterReceiptService {
       }
       
       qr += '\x1B\x21\x08'; // Bold
-      qr += '📱 QUÉT MÃ QR ĐỂ THANH TOÁN\n';
+      qr += 'QUET MA QR DE THANH TOAN\n';
       qr += '\x1B\x21\x00'; // Normal
       
       // QR code image (sử dụng VietQR API)
@@ -250,15 +238,14 @@ export class XprinterReceiptService {
       // QR code image với ESC/POS commands
       qr += '\x1B\x61\x01'; // Center alignment
       qr += '[QR CODE IMAGE]\n';
-      qr += `🔗 ${qrImageUrl}\n`;
-      qr += `💰 Số tiền: ${Number(order.total).toLocaleString('vi-VN')} VNĐ\n`;
+      qr += `So tien: ${Number(order.total).toLocaleString('vi-VN')} VND\n`;
       
       if (config.footer.showBankInfo) {
         qr += '\x1B\x61\x00'; // Left alignment
-        qr += `🏦 Ngân hàng: ${bankConfig.bankName}\n`;
-        qr += `💳 STK: ${bankConfig.accountNumber}\n`;
-        qr += `👤 Chủ TK: ${bankConfig.accountName}\n`;
-        qr += `📝 Nội dung: ${order.orderNumber}\n`;
+        qr += `Ngan hang: ${bankConfig.bankName}\n`;
+        qr += `STK: ${bankConfig.accountNumber}\n`;
+        qr += `Chu TK: ${bankConfig.accountName}\n`;
+        qr += `Noi dung: ${order.orderNumber}\n`;
       }
       
       if (config.style.showSeparators) {

@@ -22,8 +22,16 @@ export class TaxConfigService {
   // Lấy cấu hình thuế
   async getTaxConfig() {
     try {
-      // Tạm thời return config mặc định
-      // TODO: Implement database storage for tax config
+      // Đọc từ database
+      const dbConfig = await this.prisma.systemConfig.findUnique({
+        where: { key: 'tax_config' }
+      });
+      
+      if (dbConfig) {
+        const parsedConfig = JSON.parse(dbConfig.value);
+        this.taxConfig = { ...this.taxConfig, ...parsedConfig };
+      }
+      
       return this.taxConfig;
     } catch (error) {
       console.error('Error getting tax config:', error);
@@ -36,8 +44,14 @@ export class TaxConfigService {
     try {
       const updatedConfig = { ...this.taxConfig, ...newConfig };
       
-      // Tạm thời chỉ update trong memory
-      // TODO: Implement database storage for tax config
+      // Lưu vào database
+      await this.prisma.systemConfig.upsert({
+        where: { key: 'tax_config' },
+        update: { value: JSON.stringify(updatedConfig) },
+        create: { key: 'tax_config', value: JSON.stringify(updatedConfig) }
+      });
+      
+      // Update trong memory
       this.taxConfig = updatedConfig;
       return updatedConfig;
     } catch (error) {
