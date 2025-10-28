@@ -22,13 +22,14 @@ export class TaxConfigService {
   // Lấy cấu hình thuế
   async getTaxConfig() {
     try {
-      // Đọc từ database
-      const dbConfig = await this.prisma.systemConfig.findUnique({
-        where: { key: 'tax_config' }
-      });
+      // Tạm thời dùng file system thay vì database
+      const fs = require('fs');
+      const path = require('path');
+      const configFile = path.join(process.cwd(), 'tax-config.json');
       
-      if (dbConfig) {
-        const parsedConfig = JSON.parse(dbConfig.value);
+      if (fs.existsSync(configFile)) {
+        const fileContent = fs.readFileSync(configFile, 'utf8');
+        const parsedConfig = JSON.parse(fileContent);
         this.taxConfig = { ...this.taxConfig, ...parsedConfig };
       }
       
@@ -44,12 +45,12 @@ export class TaxConfigService {
     try {
       const updatedConfig = { ...this.taxConfig, ...newConfig };
       
-      // Lưu vào database
-      await this.prisma.systemConfig.upsert({
-        where: { key: 'tax_config' },
-        update: { value: JSON.stringify(updatedConfig) },
-        create: { key: 'tax_config', value: JSON.stringify(updatedConfig) }
-      });
+      // Tạm thời lưu vào file thay vì database
+      const fs = require('fs');
+      const path = require('path');
+      const configFile = path.join(process.cwd(), 'tax-config.json');
+      
+      fs.writeFileSync(configFile, JSON.stringify(updatedConfig, null, 2));
       
       // Update trong memory
       this.taxConfig = updatedConfig;

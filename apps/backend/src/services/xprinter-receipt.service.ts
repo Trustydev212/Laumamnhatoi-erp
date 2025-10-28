@@ -166,7 +166,9 @@ export class XprinterReceiptService {
         item.menu.name;
       const quantity = item.quantity.toString().padStart(2);
       const price = Number(item.menu.price || 0).toLocaleString('vi-VN').padStart(6);
-      const total = Number(item.total || 0).toLocaleString('vi-VN').padStart(8);
+      // Fix: Tính total từ quantity * price nếu item.total không có
+      const itemTotal = Number(item.total) || (Number(item.menu.price || 0) * Number(item.quantity || 0));
+      const total = itemTotal.toLocaleString('vi-VN').padStart(8);
       
       items += `${name.padEnd(16)} ${quantity} ${price} ${total}\n`;
     });
@@ -208,9 +210,10 @@ export class XprinterReceiptService {
     // Separator
     calc += '═══════════════════════════════\n';
     
-    // Tổng cộng
+    // Tổng cộng - sử dụng subtotal khi thuế = 0%
+    const finalTotal = taxRate > 0 ? Number(order.total) : Number(order.subtotal);
     calc += '\x1B\x21\x30'; // Double height, double width
-    calc += `TONG CONG: ${Number(order.total).toLocaleString('vi-VN')} VND\n`;
+    calc += `TONG CONG: ${finalTotal.toLocaleString('vi-VN')} VND\n`;
     calc += '\x1B\x21\x00'; // Normal
     
     return calc;
@@ -237,7 +240,7 @@ export class XprinterReceiptService {
       
       // QR code image với ESC/POS commands
       qr += '\x1B\x61\x01'; // Center alignment
-      qr += '[QR CODE IMAGE]\n';
+      qr += `[QR CODE IMAGE]\n`;
       qr += `So tien: ${Number(order.total).toLocaleString('vi-VN')} VND\n`;
       
       if (config.footer.showBankInfo) {
