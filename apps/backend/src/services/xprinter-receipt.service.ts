@@ -157,60 +157,29 @@ export class XprinterReceiptService {
     return info;
   }
 
-  // Tạo phần danh sách món ăn với tối ưu kích thước
+  // Tạo phần danh sách món ăn đẹp như mẫu
   private generateItemsSection(order: any, config: ReceiptConfig): string {
     let items = '';
     
-    // Header cho danh sách món
+    // Header table đẹp
     items += '\x1B\x21\x08'; // Bold
-    items += '🍽️  MÓN ĂN                    SL   GIÁ\n';
+    items += 'Tên                    SL   Giá      Tổng\n';
     items += '\x1B\x21\x00'; // Normal
+    items += '─────────────────────────────────────\n';
     
-    if (config.style.showBorders) {
-      items += '┌─────────────────────────────────┐\n';
-    }
-    
-    // Danh sách món ăn với tối ưu kích thước
-    order.orderItems.forEach((item: any, index: number) => {
-      // Cắt tên món theo maxItemNameLength
-      const name = item.menu.name.length > config.items.maxItemNameLength ? 
-        item.menu.name.substring(0, config.items.maxItemNameLength - 3) + '...' : 
+    // Danh sách món ăn
+    order.orderItems.forEach((item: any) => {
+      const name = item.menu.name.length > 15 ? 
+        item.menu.name.substring(0, 15) + '...' : 
         item.menu.name;
+      const quantity = item.quantity.toString().padStart(2);
+      const price = Number(item.menu.price).toLocaleString('vi-VN').padStart(8);
+      const total = Number(item.total).toLocaleString('vi-VN').padStart(10);
       
-      // Tính toán layout cho 80mm (32 ký tự)
-      const nameWidth = config.items.maxItemNameLength;
-      const qtyWidth = 3; // SL
-      const priceWidth = 8; // GIÁ
-      
-      const paddedName = name.padEnd(nameWidth);
-      const qty = item.quantity.toString().padStart(qtyWidth);
-      const price = Number(item.menu.price).toLocaleString('vi-VN').padStart(priceWidth);
-      
-      if (config.style.showBorders) {
-        items += '│ ';
-      }
-      
-      if (config.style.compactMode) {
-        // Chế độ compact: tên món và giá trên cùng 1 dòng
-        items += `${paddedName} ${qty} ${price}`;
-      } else {
-        // Chế độ bình thường: tên món trên 1 dòng, số lượng và giá trên dòng tiếp theo
-        items += `${paddedName}\n`;
-        items += `   SL: ${qty} | GIÁ: ${price}`;
-      }
-      
-      if (config.style.showBorders) {
-        items += ' │\n';
-      } else {
-        items += '\n';
-      }
+      items += `${name.padEnd(20)} ${quantity} ${price} ${total}\n`;
     });
     
-    if (config.style.showBorders) {
-      items += '└─────────────────────────────────┘\n';
-    } else if (config.style.showSeparators) {
-      items += '───────────────────────────────\n';
-    }
+    items += '═══════════════════════════════\n';
     
     return items;
   }
@@ -226,7 +195,16 @@ export class XprinterReceiptService {
     const taxAmount = Number(order.tax) || 0;
     const taxRate = Number(taxConfig.vatRate) || 0;
     
-    if (config.footer.showTax && taxAmount > 0 && taxRate > 0) {
+    // Debug: Log tax values
+    console.log('Tax Debug:', { 
+      orderTax: order.tax, 
+      taxAmount, 
+      taxRate, 
+      taxConfig: taxConfig.vatRate 
+    });
+    
+    // Chỉ hiển thị thuế khi taxRate > 0 (không phải 0%)
+    if (config.footer.showTax && taxRate > 0 && taxAmount > 0) {
       calc += `📊 Thuế VAT (${taxRate}%): ${taxAmount.toLocaleString('vi-VN')} VNĐ\n`;
     }
     
@@ -265,12 +243,19 @@ export class XprinterReceiptService {
       qr += '📱 QUÉT MÃ QR ĐỂ THANH TOÁN\n';
       qr += '\x1B\x21\x00'; // Normal
       
-      // QR code URL
-      qr += `🔗 ${bankQRUrl}\n`;
+      // QR code image (sử dụng VietQR API)
+      const bankConfig = this.bankQRService.getBankConfig();
+      const qrImageUrl = `https://img.vietqr.io/image/${bankConfig.bankId}-${bankConfig.accountNumber}-compact2.png?amount=${Number(order.total)}&addInfo=${encodeURIComponent(`Thanh toan hoa don ${order.orderNumber}`)}`;
+      
+      // Thông tin QR code
+      qr += `🔗 ${qrImageUrl}\n`;
+      qr += `💰 Số tiền: ${Number(order.total).toLocaleString('vi-VN')} VNĐ\n`;
       
       if (config.footer.showBankInfo) {
-        qr += '💳 Hoặc chuyển khoản đến:\n';
-        qr += '🏦 Số TK: [Số tài khoản của bạn]\n';
+        qr += '\x1B\x61\x00'; // Left alignment
+        qr += `🏦 Ngân hàng: ${bankConfig.bankName}\n`;
+        qr += `💳 STK: ${bankConfig.accountNumber}\n`;
+        qr += `👤 Chủ TK: ${bankConfig.accountName}\n`;
         qr += `📝 Nội dung: ${order.orderNumber}\n`;
       }
       

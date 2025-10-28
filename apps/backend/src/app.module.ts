@@ -17,6 +17,7 @@ import { AuditModule } from './common/audit/audit.module';
 import { BackupModule } from './common/backup/backup.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -56,7 +57,7 @@ import { AppService } from './app.service';
     AdminModule,
     PrinterModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, HealthController],
   providers: [AppService],
 })
 export class AppModule {}
