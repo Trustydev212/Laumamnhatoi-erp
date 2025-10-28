@@ -7,9 +7,9 @@ export class TaxConfigService {
 
   // Cấu hình thuế mặc định
   private taxConfig = {
-    vatRate: 10, // 10%
-    vatEnabled: true,
-    serviceChargeRate: 5, // 5%
+    vatRate: 0, // 0% - mặc định không thuế
+    vatEnabled: false,
+    serviceChargeRate: 0, // 0%
     serviceChargeEnabled: false,
     taxInclusive: false, // false = thuế cộng thêm, true = thuế đã bao gồm
     taxName: 'VAT',

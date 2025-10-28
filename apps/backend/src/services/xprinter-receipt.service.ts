@@ -173,8 +173,8 @@ export class XprinterReceiptService {
         item.menu.name.substring(0, 15) + '...' : 
         item.menu.name;
       const quantity = item.quantity.toString().padStart(2);
-      const price = Number(item.menu.price).toLocaleString('vi-VN').padStart(8);
-      const total = Number(item.total).toLocaleString('vi-VN').padStart(10);
+      const price = Number(item.menu.price || 0).toLocaleString('vi-VN').padStart(8);
+      const total = Number(item.total || 0).toLocaleString('vi-VN').padStart(10);
       
       items += `${name.padEnd(20)} ${quantity} ${price} ${total}\n`;
     });
@@ -247,7 +247,9 @@ export class XprinterReceiptService {
       const bankConfig = this.bankQRService.getBankConfig();
       const qrImageUrl = `https://img.vietqr.io/image/${bankConfig.bankId}-${bankConfig.accountNumber}-compact2.png?amount=${Number(order.total)}&addInfo=${encodeURIComponent(`Thanh toan hoa don ${order.orderNumber}`)}`;
       
-      // Thông tin QR code
+      // QR code image với ESC/POS commands
+      qr += '\x1B\x61\x01'; // Center alignment
+      qr += '[QR CODE IMAGE]\n';
       qr += `🔗 ${qrImageUrl}\n`;
       qr += `💰 Số tiền: ${Number(order.total).toLocaleString('vi-VN')} VNĐ\n`;
       
