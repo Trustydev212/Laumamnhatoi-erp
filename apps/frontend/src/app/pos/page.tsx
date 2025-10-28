@@ -987,8 +987,8 @@ export default function PosPage() {
               <button
                 onClick={async () => {
                   try {
-                    // Tạo hóa đơn HTML với QR code thật
-                    const response = await fetch(`/api/printer/html/receipt/${billData.id}`, {
+                    // In hóa đơn với ESC/POS và QR code thật
+                    const response = await fetch(`/api/printer/escpos/print/${billData.id}`, {
                       method: 'GET'
                     });
                     
@@ -996,28 +996,21 @@ export default function PosPage() {
                       const result = await response.json();
                       
                       if (result.success) {
-                        // Mở hộp thoại in với HTML receipt
-                        const printWindow = window.open('', '_blank');
-                        if (printWindow) {
-                          printWindow.document.write(result.html);
-                          printWindow.document.close();
-                        }
-                        
-                        alert('Hóa đơn HTML đã được tạo! Hộp thoại in sẽ mở tự động với QR code thật.');
+                        alert('Hóa đơn đã được gửi tới máy in Xprinter T80L với QR code thật!');
                       } else {
-                        alert('Lỗi khi tạo hóa đơn HTML: ' + result.message);
+                        alert('Lỗi khi in hóa đơn: ' + result.message);
                       }
                     } else {
-                      alert('Lỗi khi tạo hóa đơn HTML. Vui lòng thử lại.');
+                      alert('Lỗi khi in hóa đơn. Vui lòng thử lại.');
                     }
                   } catch (error) {
-                    console.error('Error printing HTML receipt:', error);
-                    alert('Lỗi khi in hóa đơn HTML: ' + (error instanceof Error ? error.message : String(error)));
+                    console.error('Error printing ESC/POS receipt:', error);
+                    alert('Lỗi khi in hóa đơn: ' + (error instanceof Error ? error.message : String(error)));
                   }
                 }}
                 className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
               >
-                In hóa đơn Xprinter
+                In hóa đơn Xprinter (ESC/POS + QR)
               </button>
               <button
                 onClick={() => setShowBill(false)}
