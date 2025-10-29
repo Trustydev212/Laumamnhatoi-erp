@@ -1,5 +1,5 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { EscposPrinterService } from '../services/escpos-printer.service';
+import { EscposPrinterService } from '../../services/escpos-printer.service';
 
 @Controller('printer/escpos')
 export class EscposPrinterController {

@@ -12,6 +12,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { ShiftModule } from './modules/shift/shift.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { PrinterModule } from './modules/printer/printer.module';
+import { VietQRPrinterModule } from './modules/printer/vietqr-printer.module';
 import { RealtimeModule } from './common/realtime/realtime.module';
 import { AuditModule } from './common/audit/audit.module';
 import { BackupModule } from './common/backup/backup.module';
@@ -56,6 +57,7 @@ import { HealthController } from './health.controller';
     ShiftModule,
     AdminModule,
     PrinterModule,
+    VietQRPrinterModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService],

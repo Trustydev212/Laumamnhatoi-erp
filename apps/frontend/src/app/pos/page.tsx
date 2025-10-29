@@ -1013,6 +1013,54 @@ export default function PosPage() {
                 In hóa đơn Xprinter (ESC/POS + QR)
               </button>
               <button
+                onClick={async () => {
+                  try {
+                    // Chuẩn bị dữ liệu hóa đơn cho VietQR
+                    const billDataForVietQR = {
+                      id: billData.id,
+                      cashier: user ? `${user.firstName} ${user.lastName}`.trim() : 'Thu ngân',
+                      date: new Date().toLocaleDateString('vi-VN'),
+                      startTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+                      items: billData.items.map((item: any) => ({
+                        name: item.menu?.name || item.name || 'Món ăn',
+                        qty: item.quantity || 1,
+                        price: item.price || 0
+                      })),
+                      total: billData.total || 0
+                    };
+
+                    console.log('📋 Dữ liệu hóa đơn VietQR:', billDataForVietQR);
+
+                    // Gọi API in hóa đơn VietQR
+                    const response = await fetch('/api/printer/vietqr/print-bill', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(billDataForVietQR)
+                    });
+                    
+                    if (response.ok) {
+                      const result = await response.json();
+                      
+                      if (result.success) {
+                        alert('✅ Hóa đơn VietQR đã được in thành công!\n\n🧾 Layout chuẩn với QR thanh toán động\n💳 Khách có thể quét QR để chuyển khoản\n🖨️ In qua máy Xprinter T80L');
+                      } else {
+                        alert('❌ Lỗi khi in hóa đơn VietQR: ' + result.message);
+                      }
+                    } else {
+                      alert('❌ Lỗi khi gọi API in hóa đơn VietQR. Vui lòng thử lại.');
+                    }
+                  } catch (error) {
+                    console.error('❌ Error printing VietQR receipt:', error);
+                    alert('❌ Lỗi khi in hóa đơn VietQR: ' + (error instanceof Error ? error.message : String(error)));
+                  }
+                }}
+                className="flex-1 bg-purple-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-purple-600 text-sm sm:text-base"
+              >
+                🧾 In VietQR (QR Bank)
+              </button>
+              <button
                 onClick={() => setShowBill(false)}
                 className="flex-1 bg-gray-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-600 text-sm sm:text-base"
               >

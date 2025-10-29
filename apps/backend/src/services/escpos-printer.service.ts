@@ -164,9 +164,9 @@ export class EscposPrinterService {
     
     // Bank info
     commands += '\x1B\x61\x00'; // Left alignment
-    commands += `Ngan hang: ${bankConfig.bankName}\n`;
-    commands += `STK: ${bankConfig.accountNumber}\n`;
-    commands += `Chu TK: ${bankConfig.accountName}\n`;
+    commands += `Ngan hang: Vietcombank\n`;
+    commands += `STK: 0123456789\n`;
+    commands += `Chu TK: LAU MAM NHA TOI\n`;
     commands += `Noi dung: ${order.orderNumber}\n`;
     commands += '═══════════════════════════════\n';
 

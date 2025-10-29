@@ -68,7 +68,7 @@ export class XprinterReceiptService {
       receipt += this.generateCalculationSection(order, taxConfig, receiptConfig);
       
       // QR Code Section
-      receipt += this.generateQRCodeSection(bankQRUrl, order, receiptConfig);
+      receipt += this.generateQRCodeSection(bankQRUrl, order, receiptConfig, taxConfig);
       
       // Footer Section
       receipt += this.generateFooter(receiptConfig);
@@ -220,7 +220,7 @@ export class XprinterReceiptService {
   }
 
   // Tạo phần QR code thanh toán
-  private generateQRCodeSection(bankQRUrl: string, order: any, config: ReceiptConfig): string {
+  private generateQRCodeSection(bankQRUrl: string, order: any, config: ReceiptConfig, taxConfig: any): string {
     let qr = '';
     
     if (config.footer.showQRCode) {
@@ -242,6 +242,7 @@ export class XprinterReceiptService {
       qr += '\x1B\x61\x01'; // Center alignment
       qr += `[QR CODE IMAGE]\n`;
       // Fix: Sử dụng subtotal thay vì total để tránh thuế
+      const taxRate = Number(taxConfig.vatRate) || 0;
       const qrAmount = taxRate > 0 ? Number(order.total) : Number(order.subtotal);
       qr += `So tien: ${qrAmount.toLocaleString('vi-VN')} VND\n`;
       

@@ -1,5 +1,5 @@
 import { Controller, Get, Param } from '@nestjs/common';
-import { HtmlReceiptService } from '../services/html-receipt.service';
+import { HtmlReceiptService } from '../../services/html-receipt.service';
 
 @Controller('printer/html')
 export class HtmlReceiptController {

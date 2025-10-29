@@ -118,9 +118,10 @@ else
 fi
 
 print_success "🎉 Deployment completed successfully!"
-print_status "🌐 Frontend: http://36.50.27.82:3002"
-print_status "🔧 Backend API: http://36.50.27.82:3001"
-print_status "📚 API Docs: http://36.50.27.82:3001/api/docs"
+print_status "🌐 Website: http://laumamnhatoi.vn"
+print_status "🔧 Backend API: http://laumamnhatoi.vn/api"
+print_status "📚 API Docs: http://laumamnhatoi.vn/api/docs"
+print_status "🧪 VietQR Test: http://laumamnhatoi.vn/vietqr-test"
 
 # Show recent logs
 print_status "📋 Recent logs:"
