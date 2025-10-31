@@ -57,4 +57,17 @@ export class ChatbotController {
       };
     }
   }
+
+  @Get('status')
+  @ApiOperation({ summary: 'Check chatbot configuration status' })
+  @ApiResponse({ status: 200, description: 'Status retrieved successfully' })
+  async getStatus() {
+    const status = this.chatbotService.getStatus();
+    return {
+      success: true,
+      configured: status.configured,
+      message: status.message,
+      timestamp: new Date().toISOString()
+    };
+  }
 }

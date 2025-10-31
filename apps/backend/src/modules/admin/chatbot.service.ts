@@ -316,4 +316,29 @@ Hãy phân tích và trả lời dựa trên dữ liệu trên.`;
       };
     }
   }
+
+  /**
+   * Get chatbot configuration status
+   */
+  getStatus(): { configured: boolean; message: string } {
+    if (this.apiKeyConfigured && this.openai) {
+      return {
+        configured: true,
+        message: 'Chatbot đã được cấu hình và sẵn sàng sử dụng.'
+      };
+    } else {
+      const apiKey = this.configService.get<string>('OPENAI_API_KEY') || process.env.OPENAI_API_KEY;
+      if (!apiKey || apiKey.trim() === '') {
+        return {
+          configured: false,
+          message: 'OPENAI_API_KEY chưa được cấu hình. Vui lòng thêm vào file .env và restart backend.'
+        };
+      } else {
+        return {
+          configured: false,
+          message: 'OPENAI_API_KEY đã có nhưng client chưa khởi tạo thành công. Vui lòng kiểm tra lại API key.'
+        };
+      }
+    }
+  }
 }
