@@ -46,9 +46,16 @@ cd /home/deploy/Laumamnhatoi-erp
 
 print_status "📁 Working directory: $(pwd)"
 
-# Pull latest code
+# Pull latest code (stash local changes if any to avoid conflicts)
 print_status "📥 Pulling latest code from GitHub..."
-git pull origin main
+# Check if there are uncommitted changes
+if ! git diff-index --quiet HEAD --; then
+    print_warning "⚠️  Uncommitted changes detected, stashing them..."
+    git stash save "Auto-stash before deploy $(date +%Y%m%d-%H%M%S)"
+fi
+# Fetch and reset to remote to ensure we're in sync
+git fetch origin main
+git reset --hard origin/main
 
 # Install/update dependencies
 print_status "📦 Installing dependencies..."
