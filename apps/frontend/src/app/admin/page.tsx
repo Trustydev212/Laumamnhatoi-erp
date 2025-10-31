@@ -122,6 +122,18 @@ export default function AdminPage() {
   const [logLevelFilter, setLogLevelFilter] = useState('');
   const [logUserFilter, setLogUserFilter] = useState('');
   const [logDateFilter, setLogDateFilter] = useState('');
+  
+  // Tax config states
+  const [taxConfig, setTaxConfig] = useState({
+    vatEnabled: false,
+    vatRate: 0,
+    vatName: 'VAT',
+    taxInclusive: false,
+    serviceChargeEnabled: false,
+    serviceChargeRate: 0,
+    serviceChargeName: 'Phí phục vụ'
+  });
+  const [taxConfigLoading, setTaxConfigLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -143,6 +155,36 @@ export default function AdminPage() {
 
     // return () => clearInterval(interval);
   }, [user, router]);
+
+  // Load tax config when tax-settings tab is active
+  useEffect(() => {
+    if (activeTab === 'tax-settings') {
+      loadTaxConfig();
+    }
+  }, [activeTab]);
+
+  const loadTaxConfig = async () => {
+    try {
+      setTaxConfigLoading(true);
+      const response = await api.get('/print/tax-config');
+      if (response.data.success && response.data.taxConfig) {
+        setTaxConfig({
+          vatEnabled: response.data.taxConfig.vatEnabled || false,
+          vatRate: response.data.taxConfig.vatRate || 0,
+          vatName: response.data.taxConfig.taxName || response.data.taxConfig.vatName || 'VAT',
+          taxInclusive: response.data.taxConfig.taxInclusive || false,
+          serviceChargeEnabled: response.data.taxConfig.serviceChargeEnabled || false,
+          serviceChargeRate: response.data.taxConfig.serviceChargeRate || 0,
+          serviceChargeName: response.data.taxConfig.serviceChargeName || 'Phí phục vụ'
+        });
+      }
+    } catch (error) {
+      console.error('Error loading tax config:', error);
+      // Giữ giá trị mặc định nếu không load được
+    } finally {
+      setTaxConfigLoading(false);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -1101,7 +1143,12 @@ export default function AdminPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium text-gray-700">Bật thuế VAT</label>
-                      <input type="checkbox" className="rounded" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="rounded" 
+                        checked={taxConfig.vatEnabled}
+                        onChange={(e) => setTaxConfig({ ...taxConfig, vatEnabled: e.target.checked })}
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Tỷ lệ thuế VAT (%)</label>
@@ -1109,7 +1156,8 @@ export default function AdminPage() {
                         type="number"
                         className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="10"
-                        defaultValue="10"
+                        value={taxConfig.vatRate}
+                        onChange={(e) => setTaxConfig({ ...taxConfig, vatRate: parseFloat(e.target.value) || 0 })}
                       />
                     </div>
                     <div>
@@ -1118,12 +1166,18 @@ export default function AdminPage() {
                         type="text"
                         className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="VAT"
-                        defaultValue="VAT"
+                        value={taxConfig.vatName}
+                        onChange={(e) => setTaxConfig({ ...taxConfig, vatName: e.target.value })}
                       />
                     </div>
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium text-gray-700">Thuế đã bao gồm trong giá</label>
-                      <input type="checkbox" className="rounded" />
+                      <input 
+                        type="checkbox" 
+                        className="rounded"
+                        checked={taxConfig.taxInclusive}
+                        onChange={(e) => setTaxConfig({ ...taxConfig, taxInclusive: e.target.checked })}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1134,7 +1188,12 @@ export default function AdminPage() {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium text-gray-700">Bật phí phục vụ</label>
-                      <input type="checkbox" className="rounded" />
+                      <input 
+                        type="checkbox" 
+                        className="rounded"
+                        checked={taxConfig.serviceChargeEnabled}
+                        onChange={(e) => setTaxConfig({ ...taxConfig, serviceChargeEnabled: e.target.checked })}
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Tỷ lệ phí phục vụ (%)</label>
@@ -1142,7 +1201,8 @@ export default function AdminPage() {
                         type="number"
                         className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="5"
-                        defaultValue="5"
+                        value={taxConfig.serviceChargeRate}
+                        onChange={(e) => setTaxConfig({ ...taxConfig, serviceChargeRate: parseFloat(e.target.value) || 0 })}
                       />
                     </div>
                     <div>
@@ -1151,7 +1211,8 @@ export default function AdminPage() {
                         type="text"
                         className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="Phí phục vụ"
-                        defaultValue="Phí phục vụ"
+                        value={taxConfig.serviceChargeName}
+                        onChange={(e) => setTaxConfig({ ...taxConfig, serviceChargeName: e.target.value })}
                       />
                     </div>
                   </div>
@@ -1196,14 +1257,9 @@ export default function AdminPage() {
                 <button
                   onClick={async () => {
                     try {
-                      const response = await fetch('/api/printer/enhanced/calculate-tax', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ subtotal: 100000 })
-                      });
-                      if (response.ok) {
-                        const result = await response.json();
-                        alert(`Test tính thuế: ${JSON.stringify(result.taxCalculation, null, 2)}`);
+                      const response = await api.post('/print/calculate-tax', { subtotal: 100000 });
+                      if (response.data.success) {
+                        alert(`Test tính thuế: ${JSON.stringify(response.data.taxCalculation, null, 2)}`);
                       }
                     } catch (error) {
                       console.error('Error testing tax calculation:', error);
@@ -1220,50 +1276,44 @@ export default function AdminPage() {
                 <button
                   onClick={async () => {
                     try {
-                      // Lấy giá trị từ form
-                      const vatEnabled = (document.querySelector('input[type="checkbox"]') as HTMLInputElement)?.checked || false;
-                      const vatRate = parseFloat((document.querySelector('input[type="number"]') as HTMLInputElement)?.value || '0');
-                      const vatName = (document.querySelector('input[placeholder="VAT"]') as HTMLInputElement)?.value || 'VAT';
-                      const vatIncluded = (document.querySelectorAll('input[type="checkbox"]')[1] as HTMLInputElement)?.checked || false;
+                      setTaxConfigLoading(true);
                       
-                      const serviceChargeEnabled = (document.querySelectorAll('input[type="checkbox"]')[2] as HTMLInputElement)?.checked || false;
-                      const serviceChargeRate = parseFloat((document.querySelectorAll('input[type="number"]')[1] as HTMLInputElement)?.value || '0');
-                      const serviceChargeName = (document.querySelector('input[placeholder="Phí phục vụ"]') as HTMLInputElement)?.value || 'Phí phục vụ';
-                      
-                      const taxConfig = {
-                        vatEnabled,
-                        vatRate,
-                        vatName,
-                        vatIncludedInPrice: vatIncluded,
-                        serviceChargeEnabled,
-                        serviceChargeRate,
-                        serviceChargeName,
+                      const configToSave = {
+                        vatEnabled: taxConfig.vatEnabled,
+                        vatRate: taxConfig.vatRate,
+                        taxName: taxConfig.vatName,
+                        taxInclusive: taxConfig.taxInclusive,
+                        serviceChargeEnabled: taxConfig.serviceChargeEnabled,
+                        serviceChargeRate: taxConfig.serviceChargeRate,
+                        serviceChargeName: taxConfig.serviceChargeName,
                         currency: 'VND',
                         currencySymbol: '₫',
                         roundingMethod: 'round'
                       };
 
-                      const response = await fetch('/api/printer/enhanced/tax-config', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(taxConfig)
-                      });
+                      const response = await api.post('/print/tax-config', configToSave);
                       
-                      if (response.ok) {
-                        alert('Cấu hình thuế đã được lưu!');
+                      if (response.data.success) {
+                        alert('✅ Cấu hình thuế đã được lưu thành công!');
+                        // Reload để đảm bảo hiển thị đúng
+                        await loadTaxConfig();
                       } else {
-                        alert('Lỗi khi lưu cấu hình thuế');
+                        alert('❌ Lỗi khi lưu cấu hình thuế: ' + response.data.message);
                       }
                     } catch (error) {
-                      alert('Lỗi khi lưu cấu hình thuế: ' + (error instanceof Error ? error.message : String(error)));
+                      console.error('Error saving tax config:', error);
+                      alert('❌ Lỗi khi lưu cấu hình thuế: ' + (error instanceof Error ? error.message : String(error)));
+                    } finally {
+                      setTaxConfigLoading(false);
                     }
                   }}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2"
+                  disabled={taxConfigLoading}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  Lưu cấu hình
+                  {taxConfigLoading ? 'Đang lưu...' : 'Lưu cấu hình'}
                 </button>
               </div>
             </div>

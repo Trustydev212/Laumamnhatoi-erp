@@ -30,10 +30,19 @@ export class TaxConfigService {
       if (fs.existsSync(configFile)) {
         const fileContent = fs.readFileSync(configFile, 'utf8');
         const parsedConfig = JSON.parse(fileContent);
-        this.taxConfig = { ...this.taxConfig, ...parsedConfig };
+        // Merge với config mặc định để đảm bảo có đầy đủ fields
+        this.taxConfig = { 
+          ...this.taxConfig, 
+          ...parsedConfig,
+          // Đảm bảo các field quan trọng không bị undefined
+          vatRate: parsedConfig.vatRate ?? this.taxConfig.vatRate,
+          vatEnabled: parsedConfig.vatEnabled ?? this.taxConfig.vatEnabled,
+          serviceChargeRate: parsedConfig.serviceChargeRate ?? this.taxConfig.serviceChargeRate,
+          serviceChargeEnabled: parsedConfig.serviceChargeEnabled ?? this.taxConfig.serviceChargeEnabled
+        };
       }
       
-      return this.taxConfig;
+      return { ...this.taxConfig };
     } catch (error) {
       console.error('Error getting tax config:', error);
       return this.taxConfig;

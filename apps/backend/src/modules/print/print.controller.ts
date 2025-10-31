@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Res } from '@nestjs/common';
+import { Controller, Post, Get, Body, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { PrintService } from './print.service';
 import { TaxConfigService } from '../../services/tax-config.service';
@@ -190,6 +190,59 @@ export class PrintController {
       res.status(500).json({
         success: false,
         message: 'Lỗi khi test in QR: ' + (error instanceof Error ? error.message : String(error)),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Lấy cấu hình thuế hiện tại
+   * GET /api/print/tax-config
+   */
+  @Get('tax-config')
+  async getTaxConfig(@Res() res: Response) {
+    try {
+      const taxConfig = await this.taxConfigService.getTaxConfig();
+      
+      res.status(200).json({
+        success: true,
+        taxConfig,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ Lỗi trong getTaxConfig:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy cấu hình thuế: ' + (error instanceof Error ? error.message : String(error)),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Cập nhật cấu hình thuế
+   * POST /api/print/tax-config
+   */
+  @Post('tax-config')
+  async updateTaxConfig(@Body() body: any, @Res() res: Response) {
+    try {
+      console.log('📝 Nhận request cập nhật cấu hình thuế:', body);
+
+      const updatedConfig = await this.taxConfigService.updateTaxConfig(body);
+
+      res.status(200).json({
+        success: true,
+        message: 'Cấu hình thuế đã được cập nhật thành công!',
+        taxConfig: updatedConfig,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ Lỗi trong updateTaxConfig:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi cập nhật cấu hình thuế: ' + (error instanceof Error ? error.message : String(error)),
         timestamp: new Date().toISOString()
       });
     }
