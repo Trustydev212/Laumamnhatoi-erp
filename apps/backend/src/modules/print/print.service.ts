@@ -520,10 +520,19 @@ export class PrintService {
    */
   private createPrinterDevice(): any {
     if (this.printerConfig.type === 'usb') {
+      console.log('🔌 Tạo USB printer device...');
       return new escpos.USB();
     } else {
+      console.log(`🌐 Tạo Network printer device: ${this.printerConfig.ip}:${this.printerConfig.port}`);
       return new escpos.Network(this.printerConfig.ip, this.printerConfig.port);
     }
+  }
+
+  /**
+   * Lấy cấu hình máy in hiện tại
+   */
+  getPrinterConfig(): PrinterConfig {
+    return { ...this.printerConfig };
   }
 
   /**

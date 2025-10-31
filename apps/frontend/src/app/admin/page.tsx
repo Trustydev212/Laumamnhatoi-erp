@@ -140,6 +140,12 @@ export default function AdminPage() {
     accountName: 'LAU MAM NHA TOI'
   });
   const [vietQRConfigLoading, setVietQRConfigLoading] = useState(false);
+  const [printerConfig, setPrinterConfig] = useState({
+    type: 'usb' as 'usb' | 'network',
+    ip: '192.168.1.100',
+    port: 9100
+  });
+  const [printerConfigLoading, setPrinterConfigLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -175,6 +181,32 @@ export default function AdminPage() {
       loadVietQRConfig();
     }
   }, [activeTab]);
+
+  // Load printer config when printer-settings tab is active
+  useEffect(() => {
+    if (activeTab === 'printer-settings') {
+      loadPrinterConfig();
+    }
+  }, [activeTab]);
+
+  const loadPrinterConfig = async () => {
+    try {
+      setPrinterConfigLoading(true);
+      const response = await api.get('/print/printer-config');
+      if (response.data.success && response.data.printerConfig) {
+        setPrinterConfig({
+          type: response.data.printerConfig.type || 'usb',
+          ip: response.data.printerConfig.ip || '192.168.1.100',
+          port: response.data.printerConfig.port || 9100
+        });
+      }
+    } catch (error) {
+      console.error('Error loading printer config:', error);
+      // Giữ giá trị mặc định nếu không load được
+    } finally {
+      setPrinterConfigLoading(false);
+    }
+  };
 
   const loadVietQRConfig = async () => {
     try {
@@ -449,6 +481,12 @@ export default function AdminPage() {
               onClick={() => setActiveTab('vietqr-settings')}
             >
               Cấu hình VietQR
+            </button>
+            <button
+              className={`py-2 px-4 text-sm font-medium ${activeTab === 'printer-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('printer-settings')}
+            >
+              Cấu hình máy in
             </button>
           </div>
         </div>
@@ -1655,6 +1693,82 @@ export default function AdminPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   {vietQRConfigLoading ? 'Đang lưu...' : 'Lưu cấu hình'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Printer Settings Tab */}
+        {activeTab === 'printer-settings' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Cấu hình máy in</h2>
+              <p className="text-gray-600 mb-6">
+                Kết nối máy in Xprinter qua cổng USB
+              </p>
+              
+              <div className="max-w-md space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 mb-3">
+                    <strong>📌 Kết nối USB:</strong> Máy in Xprinter phải được kết nối trực tiếp vào máy tính/server qua cổng USB.
+                  </p>
+                  <div className="text-sm text-blue-700 space-y-2">
+                    <p><strong>Hướng dẫn:</strong></p>
+                    <ul className="list-disc list-inside space-y-1 ml-2">
+                      <li>Kết nối máy in vào cổng USB của máy tính/server</li>
+                      <li>Đảm bảo máy in đã được cài driver trên máy tính/server</li>
+                      <li>Hệ thống sẽ tự động tìm và kết nối máy in USB</li>
+                      <li>Không cần cấu hình IP hay port cho USB</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Trạng thái kết nối:</p>
+                  <p className="text-xs text-gray-600">
+                    Máy in sẽ được tự động phát hiện khi có kết nối USB. 
+                    Nếu không thấy máy in, hãy kiểm tra lại cáp USB và driver.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={async () => {
+                    try {
+                      setPrinterConfigLoading(true);
+                      
+                      // Luôn dùng USB
+                      const configToSave = {
+                        type: 'usb',
+                        ip: '192.168.1.100',
+                        port: 9100
+                      };
+                      
+                      const response = await api.post('/print/printer-config', configToSave);
+                      
+                      if (response.data.success) {
+                        alert('✅ Cấu hình máy in USB đã được lưu thành công!\n\nĐảm bảo máy in đã được kết nối qua USB và có driver.');
+                        // Reload để đảm bảo hiển thị đúng
+                        await loadPrinterConfig();
+                      } else {
+                        alert('❌ Lỗi khi lưu cấu hình máy in: ' + response.data.message);
+                      }
+                    } catch (error) {
+                      console.error('Error saving printer config:', error);
+                      alert('❌ Lỗi khi lưu cấu hình máy in: ' + (error instanceof Error ? error.message : String(error)));
+                    } finally {
+                      setPrinterConfigLoading(false);
+                    }
+                  }}
+                  disabled={printerConfigLoading}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  {printerConfigLoading ? 'Đang lưu...' : 'Lưu cấu hình'}
                 </button>
               </div>
             </div>

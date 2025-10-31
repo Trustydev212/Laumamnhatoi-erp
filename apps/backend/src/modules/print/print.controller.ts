@@ -279,6 +279,58 @@ export class PrintController {
   }
 
   /**
+   * Lấy cấu hình máy in
+   * GET /api/print/printer-config
+   */
+  @Get('printer-config')
+  async getPrinterConfig(@Res() res: Response) {
+    try {
+      const config = await this.printService.getPrinterConfig();
+      
+      res.status(200).json({
+        success: true,
+        printerConfig: config,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ Lỗi trong getPrinterConfig:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy cấu hình máy in: ' + (error instanceof Error ? error.message : String(error)),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Cập nhật cấu hình máy in
+   * POST /api/print/printer-config
+   */
+  @Post('printer-config')
+  async updatePrinterConfig(@Body() body: any, @Res() res: Response) {
+    try {
+      console.log('📝 Nhận request cập nhật cấu hình máy in:', body);
+
+      await this.printService.updatePrinterConfig(body);
+
+      res.status(200).json({
+        success: true,
+        message: 'Cấu hình máy in đã được cập nhật thành công!',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ Lỗi trong updatePrinterConfig:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi cập nhật cấu hình máy in: ' + (error instanceof Error ? error.message : String(error)),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
    * Lấy cấu hình VietQR
    * GET /api/print/vietqr-config
    */
