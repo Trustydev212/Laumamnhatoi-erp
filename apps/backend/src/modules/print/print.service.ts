@@ -571,51 +571,54 @@ export class PrintService {
     }
     body {
       font-family: 'Courier New', monospace;
-      font-size: 12px;
+      font-size: 14px;
       width: 80mm;
       margin: 0 auto;
-      padding: 10px;
-      line-height: 1.4;
+      padding: 12px;
+      line-height: 1.5;
     }
     .header {
       text-align: center;
       font-weight: bold;
-      font-size: 16px;
-      margin-bottom: 10px;
+      font-size: 20px;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
     }
     .qr-container {
       text-align: center;
-      margin: 15px 0;
+      margin: 18px 0;
     }
     .qr-image {
-      width: 256px;
-      height: 256px;
+      width: 280px;
+      height: 280px;
       max-width: 100%;
       border: 2px solid #000;
       border-radius: 4px;
     }
     .info {
       text-align: center;
-      margin: 10px 0;
-      font-size: 13px;
+      margin: 12px 0;
+      font-size: 15px;
     }
     .amount {
       font-weight: bold;
-      font-size: 16px;
-      margin: 10px 0;
+      font-size: 20px;
+      margin: 12px 0;
+      color: #000;
     }
     .bill-id {
-      font-size: 11px;
-      color: #666;
+      font-size: 14px;
+      color: #333;
+      margin-top: 8px;
     }
     .footer {
       text-align: center;
-      margin-top: 15px;
-      font-size: 11px;
+      margin-top: 18px;
+      font-size: 14px;
     }
     .divider {
       border-top: 1px dashed #000;
-      margin: 10px 0;
+      margin: 12px 0;
     }
   </style>
 </head>
@@ -630,13 +633,13 @@ export class PrintService {
   <div class="info">
     <div class="amount">Số tiền: ${Number(amount).toLocaleString('vi-VN')} ₫</div>
     <div class="bill-id">Mã hóa đơn: ${billId}</div>
-    ${accountName ? `<div style="font-size: 10px; margin-top: 5px;">${accountName}</div>` : ''}
+    ${accountName ? `<div style="font-size: 13px; margin-top: 8px; color: #555;">${accountName}</div>` : ''}
   </div>
   
   <div class="divider"></div>
   <div class="footer">
-    <div style="font-weight: bold; margin-bottom: 5px;">Quét QR để thanh toán</div>
-    <div style="font-size: 10px;">699 Phạm Hữu Lầu, Cao Lãnh, Đồng Tháp</div>
+    <div style="font-weight: bold; margin-bottom: 8px; font-size: 15px;">Quét QR để thanh toán</div>
+    <div style="font-size: 12px;">699 Phạm Hữu Lầu, Cao Lãnh, Đồng Tháp</div>
   </div>
 </body>
 </html>
@@ -692,75 +695,83 @@ export class PrintService {
     }
     body {
       font-family: 'Courier New', monospace;
-      font-size: 12px;
+      font-size: 14px;
       width: 80mm;
       margin: 0 auto;
-      padding: 10px;
-      line-height: 1.4;
+      padding: 12px;
+      line-height: 1.5;
     }
     .header {
       text-align: center;
       font-weight: bold;
-      font-size: 16px;
-      margin-bottom: 10px;
+      font-size: 20px;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
     }
     .subheader {
       text-align: center;
-      font-size: 14px;
-      margin-bottom: 5px;
+      font-size: 16px;
+      margin-bottom: 8px;
+      font-weight: bold;
     }
     .info {
-      margin: 8px 0;
-      font-size: 11px;
+      margin: 10px 0;
+      font-size: 13px;
+      line-height: 1.6;
     }
     .items {
-      margin: 10px 0;
+      margin: 12px 0;
     }
     .item-row {
       display: flex;
       justify-content: space-between;
-      margin: 4px 0;
-      font-size: 11px;
+      margin: 5px 0;
+      font-size: 13px;
+      line-height: 1.5;
     }
     .item-name {
       flex: 1;
-      margin-right: 5px;
+      margin-right: 8px;
     }
     .item-price {
       text-align: right;
       white-space: nowrap;
+      font-weight: 500;
     }
     .divider {
       border-top: 1px dashed #000;
-      margin: 8px 0;
+      margin: 10px 0;
     }
     .summary {
-      margin-top: 10px;
+      margin-top: 12px;
     }
     .summary-row {
       display: flex;
       justify-content: space-between;
-      margin: 3px 0;
-      font-size: 11px;
+      margin: 5px 0;
+      font-size: 13px;
+      line-height: 1.6;
     }
     .total-row {
       font-weight: bold;
-      font-size: 14px;
-      margin-top: 8px;
-      border-top: 1px solid #000;
-      padding-top: 5px;
+      font-size: 18px;
+      margin-top: 10px;
+      border-top: 2px solid #000;
+      padding-top: 8px;
+      color: #000;
     }
     .footer {
       text-align: center;
-      margin-top: 15px;
-      font-size: 10px;
+      margin-top: 18px;
+      font-size: 12px;
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
   <div class="header">NHÀ TÔI RESTAURANT</div>
   <div class="subheader">HÓA ĐƠN THANH TOÁN</div>
-  <div class="subheader" style="font-size: 11px;">Cảm ơn quý khách!</div>
+  <div style="text-align: center; font-size: 14px; margin-bottom: 10px;">Cảm ơn quý khách!</div>
   <div class="divider"></div>
   
   <div class="info">Số đơn: ${bill.id}</div>
@@ -769,7 +780,7 @@ export class PrintService {
   <div class="divider"></div>
   
   <div class="items">
-    <div class="item-row" style="font-weight: bold; margin-bottom: 5px;">
+    <div class="item-row" style="font-weight: bold; margin-bottom: 8px; font-size: 14px; border-bottom: 1px solid #000; padding-bottom: 5px;">
       <span class="item-name">STT  Món ăn</span>
       <span class="item-price">SL   Giá</span>
     </div>
@@ -785,7 +796,7 @@ export class PrintService {
       return `
         <div class="item-row">
           <span class="item-name">${(i + 1).toString().padEnd(3)} ${itemName}</span>
-          <span class="item-price">${qty.toString().padEnd(3)} ${itemTotal.toLocaleString('vi-VN').padStart(8)}</span>
+          <span class="item-price">${qty.toString().padEnd(3)} ${itemTotal.toLocaleString('vi-VN').padStart(10)}</span>
         </div>
       `;
     }).join('')}
@@ -795,18 +806,18 @@ export class PrintService {
   <div class="summary">
     <div class="summary-row">
       <span>Tạm tính:</span>
-      <span>${subtotal.toLocaleString('vi-VN')} đ</span>
+      <span style="font-weight: 500;">${subtotal.toLocaleString('vi-VN')} đ</span>
     </div>
     ${bill.vatAmount > 0 ? `
     <div class="summary-row">
       <span>${bill.taxName || 'VAT'} (${bill.vatRate || 0}%):</span>
-      <span>${vatAmount.toLocaleString('vi-VN')} đ</span>
+      <span style="font-weight: 500;">${vatAmount.toLocaleString('vi-VN')} đ</span>
     </div>
     ` : ''}
     ${bill.serviceChargeAmount > 0 ? `
     <div class="summary-row">
       <span>${bill.serviceChargeName || 'Phí phục vụ'} (${bill.serviceChargeRate || 0}%):</span>
-      <span>${serviceChargeAmount.toLocaleString('vi-VN')} đ</span>
+      <span style="font-weight: 500;">${serviceChargeAmount.toLocaleString('vi-VN')} đ</span>
     </div>
     ` : ''}
     <div class="summary-row total-row">
@@ -816,9 +827,9 @@ export class PrintService {
   </div>
   
   <div class="footer">
-    <div>699 Phạm Hữu Lầu, Cao Lãnh, Đồng Tháp</div>
-    <div>Wifi: nhatoi2025</div>
-    <div style="margin-top: 10px;">Hẹn gặp lại quý khách!</div>
+    <div style="margin-bottom: 6px;">699 Phạm Hữu Lầu, Cao Lãnh, Đồng Tháp</div>
+    <div style="margin-bottom: 6px;">Wifi: nhatoi2025</div>
+    <div style="margin-top: 12px; font-weight: bold;">Hẹn gặp lại quý khách!</div>
   </div>
 </body>
 </html>
