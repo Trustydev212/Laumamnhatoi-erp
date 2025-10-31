@@ -737,11 +737,13 @@ export class PrintService {
     .item-name {
       flex: 1;
       margin-right: 8px;
+      font-family: Arial, sans-serif;
     }
     .item-price {
       text-align: right;
       white-space: nowrap;
       font-weight: 500;
+      font-family: Arial, sans-serif;
     }
     .divider {
       border-top: 1px dashed #000;
@@ -802,8 +804,8 @@ export class PrintService {
       const totalStr = itemTotal.toLocaleString('vi-VN').padStart(10, ' ');
       return `
         <div class="item-row">
-          <span class="item-name" style="font-family: 'Courier New', monospace; white-space: pre;">${(i + 1).toString().padEnd(3)} ${name}</span>
-          <span class="item-price" style="font-family: 'Courier New', monospace; white-space: pre;">${qtyStr.padStart(5)} ${totalStr}</span>
+          <span class="item-name" style="font-family: Arial, sans-serif; white-space: pre;">${(i + 1).toString().padEnd(3)} ${name}</span>
+          <span class="item-price" style="font-family: Arial, sans-serif; white-space: pre;">${qtyStr.padStart(5)} ${totalStr}</span>
         </div>
       `;
     }).join('')}
