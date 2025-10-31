@@ -10,11 +10,35 @@ export class ReportService {
       isPaid: true,
     };
 
+    // Apply date filter if provided
     if (startDate && endDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0); // Start of day
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // End of day
+      
       whereClause.paidAt = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
+        gte: start,
+        lte: end,
       };
+    } else if (startDate || endDate) {
+      // If only one date provided, still apply filter
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        whereClause.paidAt = {
+          ...whereClause.paidAt,
+          gte: start,
+        };
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        whereClause.paidAt = {
+          ...whereClause.paidAt,
+          lte: end,
+        };
+      }
     }
 
     const orders = await this.prisma.order.findMany({
@@ -39,7 +63,6 @@ export class ReportService {
 
     // Group by menu items
     const menuStats = orders.reduce((acc, order) => {
-      const taxRate = Number(order.tax) / Number(order.subtotal); // Calculate tax rate for this order
       order.orderItems.forEach(item => {
         const menuName = item.menu.name;
         if (!acc[menuName]) {
@@ -115,9 +138,10 @@ export class ReportService {
   }
 
   async getDashboard() {
+    // Fix: Create new Date objects to avoid mutating
     const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
 
     // Today's sales
     const todayOrders = await this.prisma.order.findMany({

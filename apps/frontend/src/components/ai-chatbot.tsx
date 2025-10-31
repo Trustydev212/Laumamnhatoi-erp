@@ -11,14 +11,44 @@ interface Message {
 }
 
 export default function AIChatbot({ onClose }: { onClose?: () => void }) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      role: 'assistant',
-      content: 'Xin chào! Tôi là trợ lý AI của hệ thống ERP. Tôi có thể giúp bạn:\n\n• Phân tích doanh thu và bán hàng\n• Kiểm tra tình trạng tồn kho\n• Đưa ra insights và đề xuất\n• Trả lời câu hỏi về dữ liệu kinh doanh\n\nHãy hỏi tôi bất cứ điều gì! 💡',
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [chatbotStatus, setChatbotStatus] = useState<{ configured: boolean; message: string } | null>(null);
+
+  useEffect(() => {
+    // Check chatbot status on mount
+    const checkStatus = async () => {
+      try {
+        const response = await api.get('/admin/chatbot/status');
+        setChatbotStatus(response.data);
+        
+        if (response.data.configured) {
+          setMessages([{
+            id: '1',
+            role: 'assistant',
+            content: 'Xin chào! Tôi là trợ lý AI của hệ thống ERP. Tôi có thể giúp bạn:\n\n• Phân tích doanh thu và bán hàng\n• Kiểm tra tình trạng tồn kho\n• Đưa ra insights và đề xuất\n• Trả lời câu hỏi về dữ liệu kinh doanh\n\nHãy hỏi tôi bất cứ điều gì! 💡',
+            timestamp: new Date()
+          }]);
+        } else {
+          setMessages([{
+            id: '1',
+            role: 'assistant',
+            content: response.data.message || 'Chatbot chưa được cấu hình. Vui lòng thêm OPENAI_API_KEY vào biến môi trường backend.',
+            timestamp: new Date()
+          }]);
+        }
+      } catch (error) {
+        console.error('Failed to check chatbot status:', error);
+        setMessages([{
+          id: '1',
+          role: 'assistant',
+          content: 'Không thể kiểm tra trạng thái chatbot. Vui lòng thử lại sau.',
+          timestamp: new Date()
+        }]);
+      }
+    };
+    
+    checkStatus();
+  }, []);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
