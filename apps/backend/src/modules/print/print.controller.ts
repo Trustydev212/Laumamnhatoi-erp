@@ -28,6 +28,70 @@ export class PrintController {
   ) {}
 
   /**
+   * Render hóa đơn thành HTML để in qua browser
+   * POST /api/print/render-bill-html
+   */
+  @Post('render-bill-html')
+  async renderBillHTML(@Body() body: PrintBillRequest, @Res() res: Response) {
+    try {
+      console.log('📋 Nhận request render bill HTML:', body);
+
+      // Validate dữ liệu đầu vào
+      if (!body.id || !body.time || !body.items || !Array.isArray(body.items) || body.items.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Thiếu thông tin bắt buộc: id, time, và items (phải có ít nhất 1 món)',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Tính thuế từ cấu hình
+      const subtotal = body.items.reduce((sum: number, item: any) => {
+        const price = typeof item.price === 'string' 
+          ? parseFloat(item.price.replace(/[^\d.-]/g, '')) || 0
+          : Number(item.price) || 0;
+        const qty = typeof item.qty === 'string'
+          ? parseInt(item.qty, 10) || 0
+          : Number(item.qty) || 0;
+        return sum + (price * qty);
+      }, 0);
+
+      const taxConfig = await this.taxConfigService.getTaxConfig();
+      const taxCalculation = await this.taxConfigService.calculateTax(subtotal);
+
+      // Thêm thông tin thuế vào bill
+      const billWithTax = {
+        ...body,
+        subtotal,
+        vatAmount: taxCalculation.vatAmount,
+        vatRate: taxCalculation.vatRate,
+        serviceChargeAmount: taxCalculation.serviceChargeAmount,
+        serviceChargeRate: taxCalculation.serviceChargeRate,
+        taxName: taxConfig.taxName || 'VAT',
+        serviceChargeName: taxConfig.serviceChargeName || 'Phí phục vụ'
+      };
+
+      // Render HTML
+      const html = this.printService.renderBillToHTML(billWithTax);
+
+      // Trả về HTML
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.status(200).send(html);
+
+    } catch (error) {
+      console.error('❌ Lỗi trong renderBillHTML:', error);
+      
+      res.status(500).send(`
+        <html>
+          <body>
+            <p>Lỗi server khi render hóa đơn: ${error instanceof Error ? error.message : String(error)}</p>
+          </body>
+        </html>
+      `);
+    }
+  }
+
+  /**
    * In hóa đơn thanh toán (không QR)
    * POST /api/print/print-bill
    */

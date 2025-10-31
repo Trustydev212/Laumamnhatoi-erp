@@ -529,6 +529,188 @@ export class PrintService {
   }
 
   /**
+   * Render hóa đơn thành HTML để in qua browser
+   * Format giống ESC/POS nhưng dùng HTML/CSS
+   */
+  renderBillToHTML(bill: any): string {
+    try {
+      // Tính subtotal từ items
+      const subtotal = bill.items.reduce((sum: number, item: any) => {
+        const price = typeof item.price === 'string' 
+          ? parseFloat(item.price.replace(/[^\d.-]/g, '')) || 0
+          : Number(item.price) || 0;
+        const qty = typeof item.qty === 'string'
+          ? parseInt(item.qty, 10) || 0
+          : Number(item.qty) || 0;
+        return sum + (price * qty);
+      }, 0);
+
+      // Tính thuế (sẽ lấy từ taxConfigService trong controller)
+      const vatAmount = bill.vatAmount || 0;
+      const serviceChargeAmount = bill.serviceChargeAmount || 0;
+      const total = subtotal + vatAmount + serviceChargeAmount;
+
+      // Render HTML với style giống ESC/POS (80mm width)
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Hóa đơn ${bill.id}</title>
+  <style>
+    @media print {
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+      body {
+        margin: 0;
+        padding: 10px;
+        width: 80mm;
+      }
+    }
+    body {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      width: 80mm;
+      margin: 0 auto;
+      padding: 10px;
+      line-height: 1.4;
+    }
+    .header {
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    .subheader {
+      text-align: center;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    .info {
+      margin: 8px 0;
+      font-size: 11px;
+    }
+    .items {
+      margin: 10px 0;
+    }
+    .item-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 4px 0;
+      font-size: 11px;
+    }
+    .item-name {
+      flex: 1;
+      margin-right: 5px;
+    }
+    .item-price {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .divider {
+      border-top: 1px dashed #000;
+      margin: 8px 0;
+    }
+    .summary {
+      margin-top: 10px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 3px 0;
+      font-size: 11px;
+    }
+    .total-row {
+      font-weight: bold;
+      font-size: 14px;
+      margin-top: 8px;
+      border-top: 1px solid #000;
+      padding-top: 5px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">NHÀ TÔI RESTAURANT</div>
+  <div class="subheader">HÓA ĐƠN THANH TOÁN</div>
+  <div class="subheader" style="font-size: 11px;">Cảm ơn quý khách!</div>
+  <div class="divider"></div>
+  
+  <div class="info">Số đơn: ${bill.id}</div>
+  <div class="info">Bàn: ${bill.table || 'Tại quầy'}</div>
+  <div class="info">Thời gian: ${bill.time}</div>
+  <div class="divider"></div>
+  
+  <div class="items">
+    <div class="item-row" style="font-weight: bold; margin-bottom: 5px;">
+      <span class="item-name">STT  Món ăn</span>
+      <span class="item-price">SL   Giá</span>
+    </div>
+    ${bill.items.map((item: any, i: number) => {
+      const price = typeof item.price === 'string' 
+        ? parseFloat(item.price.replace(/[^\d.-]/g, '')) || 0
+        : Number(item.price) || 0;
+      const qty = typeof item.qty === 'string'
+        ? parseInt(item.qty, 10) || 0
+        : Number(item.qty) || 0;
+      const itemTotal = price * qty;
+      const itemName = item.name || 'Món ăn';
+      return `
+        <div class="item-row">
+          <span class="item-name">${(i + 1).toString().padEnd(3)} ${itemName}</span>
+          <span class="item-price">${qty.toString().padEnd(3)} ${itemTotal.toLocaleString('vi-VN').padStart(8)}</span>
+        </div>
+      `;
+    }).join('')}
+  </div>
+  
+  <div class="divider"></div>
+  <div class="summary">
+    <div class="summary-row">
+      <span>Tạm tính:</span>
+      <span>${subtotal.toLocaleString('vi-VN')} đ</span>
+    </div>
+    ${bill.vatAmount > 0 ? `
+    <div class="summary-row">
+      <span>${bill.taxName || 'VAT'} (${bill.vatRate || 0}%):</span>
+      <span>${vatAmount.toLocaleString('vi-VN')} đ</span>
+    </div>
+    ` : ''}
+    ${bill.serviceChargeAmount > 0 ? `
+    <div class="summary-row">
+      <span>${bill.serviceChargeName || 'Phí phục vụ'} (${bill.serviceChargeRate || 0}%):</span>
+      <span>${serviceChargeAmount.toLocaleString('vi-VN')} đ</span>
+    </div>
+    ` : ''}
+    <div class="summary-row total-row">
+      <span>Tổng cộng:</span>
+      <span>${total.toLocaleString('vi-VN')} đ</span>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <div>699 Phạm Hữu Lầu, Cao Lãnh, Đồng Tháp</div>
+    <div>Wifi: nhatoi2025</div>
+    <div style="margin-top: 10px;">Hẹn gặp lại quý khách!</div>
+  </div>
+</body>
+</html>
+      `;
+
+      return html;
+    } catch (error: any) {
+      console.error('❌ Lỗi render bill to HTML:', error);
+      return `<html><body><p>Lỗi render hóa đơn: ${error.message}</p></body></html>`;
+    }
+  }
+
+  /**
    * Lấy cấu hình máy in hiện tại
    */
   getPrinterConfig(): PrinterConfig {

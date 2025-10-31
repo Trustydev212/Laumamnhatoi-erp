@@ -1081,14 +1081,57 @@ export default function PosPage() {
                 🖨️ In máy Xprinter
               </button>
               
-              {/* Nút in qua hộp thoại in của browser */}
+              {/* Nút in qua máy tính - Backend render ESC/POS HTML */}
               <button
-                onClick={() => {
-                  // In qua hộp thoại print dialog của browser
-                  window.print();
+                onClick={async () => {
+                  try {
+                    // Lấy items từ billData
+                    const orderItems = billData.items || billData.orderItems || [];
+                    
+                    // Validate items
+                    if (!Array.isArray(orderItems) || orderItems.length === 0) {
+                      alert('❌ Không có món ăn nào trong hóa đơn. Vui lòng kiểm tra lại!');
+                      return;
+                    }
+                    
+                    const printBillData = {
+                      id: billData.id || billData.orderNumber || 'UNKNOWN',
+                      table: selectedTable?.name || billData.table?.name || 'Tại quầy',
+                      time: new Date().toLocaleTimeString('vi-VN'),
+                      items: orderItems.map((item: any) => ({
+                        name: item.menu?.name || item.name || 'Món ăn',
+                        qty: item.quantity || item.qty || 1,
+                        price: item.price || item.subtotal || 0
+                      }))
+                    };
+
+                    console.log('📋 Gọi backend render bill HTML:', printBillData);
+
+                    // Gọi backend để render HTML
+                    const response = await api.post('/print/render-bill-html', printBillData, {
+                      responseType: 'text' // Nhận HTML text
+                    });
+
+                    // Mở cửa sổ mới với HTML và in
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                      printWindow.document.write(response.data);
+                      printWindow.document.close();
+                      
+                      // Đợi một chút để content load, rồi mở print dialog
+                      setTimeout(() => {
+                        printWindow.print();
+                      }, 250);
+                    } else {
+                      alert('❌ Không thể mở cửa sổ in. Vui lòng kiểm tra popup blocker.');
+                    }
+                  } catch (error) {
+                    console.error('❌ Error rendering bill HTML:', error);
+                    alert('❌ Lỗi khi render hóa đơn: ' + (error instanceof Error ? error.message : String(error)));
+                  }
                 }}
                 className="flex-1 bg-indigo-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-indigo-600 text-sm sm:text-base"
-                title="In qua hộp thoại in của máy tính (PDF hoặc máy in hệ thống)"
+                title="Backend render ESC/POS format → Hiển thị HTML → In qua browser print dialog"
               >
                 🖨️ In qua máy tính
               </button>
