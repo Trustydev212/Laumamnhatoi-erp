@@ -147,24 +147,47 @@ print_status "🔪 Killing remaining node processes and freeing ports..."
 pkill -9 -f "node dist/main" 2>/dev/null || true
 pkill -9 -f "next start" 2>/dev/null || true
 pkill -9 -f "next-server" 2>/dev/null || true
+pkill -9 node 2>/dev/null || true
 
-# Kill processes using ports 3001 and 3002
+# Kill processes using ports 3001 and 3002 - multiple attempts
 print_status "🔌 Freeing ports 3001 and 3002..."
-# Find and kill process on port 3001
-if command -v lsof >/dev/null 2>&1; then
-    lsof -ti:3001 | xargs kill -9 2>/dev/null || true
-    lsof -ti:3002 | xargs kill -9 2>/dev/null || true
-elif command -v fuser >/dev/null 2>&1; then
-    fuser -k 3001/tcp 2>/dev/null || true
-    fuser -k 3002/tcp 2>/dev/null || true
-else
-    # Fallback: try to find and kill using netstat/ss
-    netstat -tlnp 2>/dev/null | grep :3001 | awk '{print $7}' | cut -d'/' -f1 | xargs kill -9 2>/dev/null || true
-    netstat -tlnp 2>/dev/null | grep :3002 | awk '{print $7}' | cut -d'/' -f1 | xargs kill -9 2>/dev/null || true
-fi
+for port in 3001 3002; do
+    # Try multiple methods
+    if command -v lsof >/dev/null 2>&1; then
+        for pid in $(lsof -ti:${port} 2>/dev/null); do
+            kill -9 $pid 2>/dev/null || true
+        done
+    fi
+    
+    if command -v fuser >/dev/null 2>&1; then
+        fuser -k ${port}/tcp 2>/dev/null || true
+    fi
+    
+    # Fallback using netstat
+    if command -v netstat >/dev/null 2>&1; then
+        netstat -tlnp 2>/dev/null | grep :${port} | awk '{print $7}' | cut -d'/' -f1 | xargs kill -9 2>/dev/null || true
+    fi
+    
+    # Fallback using ss
+    if command -v ss >/dev/null 2>&1; then
+        ss -tlnp 2>/dev/null | grep :${port} | awk '{print $6}' | cut -d',' -f2 | cut -d'=' -f2 | xargs kill -9 2>/dev/null || true
+    fi
+done
 
-# Wait a moment for ports to be freed
-sleep 2
+# Wait longer for ports to be freed and verify
+print_status "⏳ Waiting for ports to be freed..."
+sleep 5
+
+# Verify ports are free
+for port in 3001 3002; do
+    if command -v lsof >/dev/null 2>&1; then
+        if lsof -ti:${port} >/dev/null 2>&1; then
+            print_warning "⚠️  Port ${port} still in use, attempting force kill..."
+            lsof -ti:${port} | xargs kill -9 2>/dev/null || true
+            sleep 2
+        fi
+    fi
+done
 
 # Start services with ecosystem config
 print_status "🚀 Starting services with PM2..."
