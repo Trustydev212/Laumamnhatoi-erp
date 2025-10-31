@@ -61,7 +61,7 @@ export class ChatbotService {
           }
         },
         _sum: {
-          total: true
+          subtotal: true // Doanh thu = subtotal (trước thuế)
         },
         _count: true
       }),
