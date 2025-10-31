@@ -53,9 +53,40 @@ if ! git diff-index --quiet HEAD --; then
     print_warning "⚠️  Uncommitted changes detected, stashing them..."
     git stash save "Auto-stash before deploy $(date +%Y%m%d-%H%M%S)"
 fi
-# Fetch and reset to remote to ensure we're in sync
-git fetch origin main
-git reset --hard origin/main
+
+# Try to fetch with retry and increased timeout
+MAX_RETRIES=3
+RETRY=0
+FETCH_SUCCESS=false
+
+while [ $RETRY -lt $MAX_RETRIES ] && [ "$FETCH_SUCCESS" = false ]; do
+    RETRY=$((RETRY + 1))
+    print_status "📥 Fetching from GitHub (attempt $RETRY/$MAX_RETRIES)..."
+    
+    # Increase git timeout and buffer size for large repos
+    if timeout 120 git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=300 -c http.timeout=120 fetch origin main 2>&1; then
+        FETCH_SUCCESS=true
+        print_success "✅ Git fetch successful"
+        break
+    else
+        FETCH_ERROR=$?
+        if [ $RETRY -lt $MAX_RETRIES ]; then
+            print_warning "⚠️  Git fetch failed (error code: $FETCH_ERROR), retrying in 10 seconds..."
+            sleep 10
+        else
+            print_warning "⚠️  Git fetch failed after $MAX_RETRIES attempts, trying hard reset anyway..."
+            FETCH_SUCCESS=true  # Continue anyway
+        fi
+    fi
+done
+
+# Reset to remote main
+if [ "$FETCH_SUCCESS" = true ]; then
+    print_status "🔄 Resetting to origin/main..."
+    git reset --hard origin/main || {
+        print_warning "⚠️  Hard reset failed, but continuing with current code..."
+    }
+fi
 
 # Force checkout specific files that might have conflicts
 print_status "🔄 Ensuring clean file state..."
