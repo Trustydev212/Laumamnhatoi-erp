@@ -54,10 +54,18 @@ git pull origin main
 print_status "📦 Installing dependencies..."
 npm install
 
-# Clean old builds
-print_status "🧹 Cleaning old builds..."
+# Clean old builds and cache
+print_status "🧹 Cleaning old builds and cache..."
 rm -rf apps/backend/dist
+rm -rf apps/backend/tsconfig.tsbuildinfo
 rm -rf apps/frontend/.next
+rm -rf apps/frontend/tsconfig.tsbuildinfo
+# Remove any orphaned service files that might cause build errors
+rm -f apps/backend/src/services/vietqr-printer.service.ts
+rm -f apps/backend/src/services/enhanced-printer.service.ts
+rm -f apps/backend/src/services/escpos-printer.service.ts
+rm -f apps/backend/src/services/html-receipt.service.ts
+rm -f apps/backend/src/services/xprinter-receipt.service.ts
 
 # Build backend
 print_status "🔨 Building backend..."
