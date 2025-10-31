@@ -70,7 +70,49 @@ export class PrintController {
   }
 
   /**
-   * In QR thanh toán riêng
+   * In QR thanh toán từ URL (download và in trực tiếp qua ESC/POS)
+   * POST /api/print/print-qr-from-url
+   */
+  @Post('print-qr-from-url')
+  async printQRFromURL(@Body() body: { qrUrl: string; amount: number; billId: string }, @Res() res: Response) {
+    try {
+      console.log('💳 Nhận request in QR từ URL:', body);
+
+      // Validate dữ liệu đầu vào
+      if (!body.qrUrl || !body.amount || !body.billId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Thiếu thông tin: qrUrl, amount hoặc billId',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Gọi service in QR từ URL
+      const result = await this.printService.printQRFromURL(body);
+
+      // Always return 200 if service processed (even if printer not available)
+      res.status(200).json({
+        success: result.success,
+        message: result.message,
+        timestamp: new Date().toISOString(),
+        billId: body.billId,
+        amount: body.amount,
+        printed: result.success && !result.message.includes('không khả dụng')
+      });
+
+    } catch (error) {
+      console.error('❌ Lỗi trong controller printQRFromURL:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi server khi in QR: ' + (error instanceof Error ? error.message : String(error)),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * In QR thanh toán riêng (VietQR động) - DEPRECATED: Dùng print-qr-from-url thay thế
    * POST /api/print/print-qr
    */
   @Post('print-qr')

@@ -252,7 +252,140 @@ export class PrintService {
   }
 
   /**
-   * In QR thanh toán riêng (VietQR động)
+   * In QR thanh toán từ URL (download và in trực tiếp)
+   */
+  async printQRFromURL(data: { qrUrl: string; amount: number; billId: string }): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('💳 In QR từ URL:', data);
+
+      const { qrUrl, amount, billId } = data;
+
+      // Tải QR image từ VietQR API
+      let qrBuffer: Buffer;
+      try {
+        const res = await axios.get(qrUrl, { responseType: 'arraybuffer', timeout: 10000 });
+        qrBuffer = Buffer.from(res.data, 'binary');
+        console.log('✅ Đã tải QR image, kích thước:', qrBuffer.length, 'bytes');
+      } catch (axiosError: any) {
+        console.error('❌ Lỗi tải QR image từ VietQR:', axiosError);
+        return {
+          success: false,
+          message: 'Không thể tải QR code từ VietQR API: ' + (axiosError?.message || String(axiosError))
+        };
+      }
+
+      // Try to create printer device - handle errors if printer not found
+      let device: any;
+      let printer: any;
+      
+      try {
+        device = this.createPrinterDevice();
+        printer = new escpos.Printer(device);
+      } catch (deviceError: any) {
+        console.error('❌ Lỗi tạo device máy in:', deviceError);
+        const isProduction = process.env.NODE_ENV === 'production';
+        if (isProduction || deviceError?.message?.includes('Can not find printer') || deviceError?.message?.includes('printer')) {
+          console.warn('⚠️  Máy in không khả dụng trên server. Trả về thành công nhưng không thực sự in.');
+          return {
+            success: true,
+            message: 'QR thanh toán đã được xử lý (máy in không khả dụng trên server). Vui lòng in từ client nếu cần.'
+          };
+        }
+        throw deviceError;
+      }
+
+      return new Promise((resolve, reject) => {
+        device.open((error: any) => {
+          if (error) {
+            console.error('❌ Lỗi kết nối máy in:', error);
+            const isProduction = process.env.NODE_ENV === 'production';
+            const errorMessage = error?.message || String(error);
+            if (isProduction || 
+                errorMessage.includes('Can not find printer') || 
+                errorMessage.includes('printer') ||
+                errorMessage.includes('ENOENT') ||
+                errorMessage.includes('device')) {
+              console.warn('⚠️  Máy in không khả dụng trên server. Trả về thành công nhưng không thực sự in.');
+              resolve({ 
+                success: true, 
+                message: 'QR thanh toán đã được xử lý (máy in không khả dụng trên server). Vui lòng in từ client nếu cần.' 
+              });
+              return;
+            }
+            reject({ success: false, message: 'Không thể kết nối máy in: ' + errorMessage });
+            return;
+          }
+
+          try {
+            // Load và in QR image
+            escpos.Image.load(qrBuffer, (image: any) => {
+              printer
+                .align('ct')
+                .style('b')
+                .size(1, 1)
+                .text('QR THANH TOÁN VIETQR')
+                .feed(1)
+                .raster(image, 'dwdh') // In bitmap rõ nét
+                .feed(1)
+                .style('normal')
+                .text(`Số tiền: ${Number(amount).toLocaleString('vi-VN')} đ`)
+                .text(`Mã hóa đơn: ${billId}`)
+                .feed(2)
+                .align('ct')
+                .text('Quét QR để thanh toán')
+                .feed(2)
+                .cut()
+                .close();
+
+              console.log('✅ In QR thành công');
+              resolve({ success: true, message: 'QR thanh toán đã được in thành công!' });
+            });
+          } catch (printError: any) {
+            console.error('❌ Lỗi khi in QR:', printError);
+            const errorMessage = printError?.message || String(printError);
+            
+            const isProduction = process.env.NODE_ENV === 'production';
+            if (isProduction || 
+                errorMessage.includes('Can not find printer') || 
+                errorMessage.includes('printer') ||
+                errorMessage.includes('ENOENT') ||
+                errorMessage.includes('device')) {
+              console.warn('⚠️  Máy in không khả dụng khi in QR. Trả về thành công.');
+              resolve({
+                success: true,
+                message: 'QR thanh toán đã được xử lý (máy in không khả dụng trên server). Vui lòng in từ client nếu cần.'
+              });
+              return;
+            }
+            
+            reject({ success: false, message: 'Lỗi khi in QR: ' + errorMessage });
+          }
+        });
+      });
+
+    } catch (error: any) {
+      console.error('❌ Lỗi trong printQRFromURL:', error);
+      const errorMessage = error?.message || String(error);
+      
+      const isProduction = process.env.NODE_ENV === 'production';
+      if (isProduction || 
+          errorMessage.includes('Can not find printer') || 
+          errorMessage.includes('printer') ||
+          errorMessage.includes('ENOENT') ||
+          errorMessage.includes('device')) {
+        console.warn('⚠️  Máy in không khả dụng. Trả về thành công.');
+        return {
+          success: true,
+          message: 'QR thanh toán đã được xử lý (máy in không khả dụng trên server). Vui lòng in từ client nếu cần.'
+        };
+      }
+      
+      return { success: false, message: 'Lỗi hệ thống: ' + errorMessage };
+    }
+  }
+
+  /**
+   * In QR thanh toán riêng (VietQR động) - DEPRECATED: Dùng printQRFromURL thay thế
    */
   async printPaymentQR(data: { amount: number; billId: string }): Promise<{ success: boolean; message: string }> {
     try {

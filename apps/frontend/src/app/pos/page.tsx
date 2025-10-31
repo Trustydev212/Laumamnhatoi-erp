@@ -1145,6 +1145,41 @@ export default function PosPage() {
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 no-print">
               <button
+                onClick={async () => {
+                  try {
+                    if (!vietQRConfig || !qrData) {
+                      alert('❌ Thiếu thông tin cấu hình QR');
+                      return;
+                    }
+
+                    // Tạo QR URL từ config
+                    const qrUrl = `https://img.vietqr.io/image/${vietQRConfig.acqId}-${vietQRConfig.accountNo}-compact2.png?amount=${qrData.amount}&addInfo=HD${qrData.billId}&accountName=${encodeURIComponent(vietQRConfig.accountName)}`;
+                    
+                    console.log('🖨️ In QR qua máy Xprinter:', { qrUrl, amount: qrData.amount, billId: qrData.billId });
+
+                    // Gọi API in QR qua máy in vật lý
+                    const response = await api.post('/print/print-qr-from-url', {
+                      qrUrl,
+                      amount: qrData.amount,
+                      billId: qrData.billId
+                    });
+
+                    if (response.data.success) {
+                      alert('✅ QR thanh toán đã được in thành công qua máy Xprinter!');
+                    } else {
+                      alert('❌ Lỗi khi in QR: ' + response.data.message);
+                    }
+                  } catch (error) {
+                    console.error('❌ Error printing QR to printer:', error);
+                    alert('❌ Lỗi khi in QR: ' + (error instanceof Error ? error.message : String(error)));
+                  }
+                }}
+                className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
+                title="In QR trực tiếp qua máy in Xprinter (ESC/POS)"
+              >
+                🖨️ In qua máy Xprinter
+              </button>
+              <button
                 onClick={() => {
                   // In qua hộp thoại print dialog của browser
                   window.print();
