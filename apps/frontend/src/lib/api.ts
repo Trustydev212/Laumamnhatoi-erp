@@ -11,12 +11,28 @@ const isMobile = typeof window !== 'undefined' &&
   (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
    window.innerWidth <= 768);
 
-// Use backend ngrok URL for mobile compatibility
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 
-  (isNgrok ? 'https://yuki-unmandatory-delia.ngrok-free.dev' : 'http://localhost:3001');
+// Use backend URL - prioritize environment variable, then detect based on environment
+// For production with Nginx proxy, use relative path /api
+// For development/ngrok, use full URL
+const getAPI_URL = () => {
+  // If NEXT_PUBLIC_API_URL is set and starts with /, use it as-is (relative path for proxy)
+  if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.startsWith('/')) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // If NEXT_PUBLIC_API_URL is set (full URL), use it
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Fallback: ngrok or localhost
+  return isNgrok 
+    ? 'https://yuki-unmandatory-delia.ngrok-free.dev'
+    : 'http://localhost:3001';
+};
 
-// Ensure API_URL is not empty
-const finalAPI_URL = API_URL || 'http://localhost:3001';
+const API_URL = getAPI_URL();
+const finalAPI_URL = API_URL || '/api';
 
 // Enhanced Debug API URL
 console.log('🌐 API URL:', API_URL);
