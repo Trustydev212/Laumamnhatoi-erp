@@ -140,10 +140,31 @@ cd /home/deploy/Laumamnhatoi-erp
 # Stop all PM2 processes
 print_status "🛑 Stopping all PM2 processes..."
 pm2 delete all 2>/dev/null || true
+pm2 kill 2>/dev/null || true
 
-# Kill any remaining node processes
-print_status "🔪 Killing remaining node processes..."
+# Kill any remaining node processes and processes using ports
+print_status "🔪 Killing remaining node processes and freeing ports..."
 pkill -9 -f "node dist/main" 2>/dev/null || true
+pkill -9 -f "next start" 2>/dev/null || true
+pkill -9 -f "next-server" 2>/dev/null || true
+
+# Kill processes using ports 3001 and 3002
+print_status "🔌 Freeing ports 3001 and 3002..."
+# Find and kill process on port 3001
+if command -v lsof >/dev/null 2>&1; then
+    lsof -ti:3001 | xargs kill -9 2>/dev/null || true
+    lsof -ti:3002 | xargs kill -9 2>/dev/null || true
+elif command -v fuser >/dev/null 2>&1; then
+    fuser -k 3001/tcp 2>/dev/null || true
+    fuser -k 3002/tcp 2>/dev/null || true
+else
+    # Fallback: try to find and kill using netstat/ss
+    netstat -tlnp 2>/dev/null | grep :3001 | awk '{print $7}' | cut -d'/' -f1 | xargs kill -9 2>/dev/null || true
+    netstat -tlnp 2>/dev/null | grep :3002 | awk '{print $7}' | cut -d'/' -f1 | xargs kill -9 2>/dev/null || true
+fi
+
+# Wait a moment for ports to be freed
+sleep 2
 
 # Start services with ecosystem config
 print_status "🚀 Starting services with PM2..."
