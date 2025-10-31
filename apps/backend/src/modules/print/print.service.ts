@@ -44,9 +44,19 @@ export class PrintService {
     try {
       console.log('🧾 In hóa đơn thanh toán:', bill);
 
+      // Validate và đảm bảo items tồn tại
+      if (!bill || !bill.items || !Array.isArray(bill.items) || bill.items.length === 0) {
+        return { 
+          success: false, 
+          message: 'Dữ liệu hóa đơn không hợp lệ: items phải là mảng và có ít nhất 1 món' 
+        };
+      }
+
       // Tính tổng tiền từ items
       const subtotal = bill.items.reduce((sum: number, item: any) => {
-        return sum + (item.price * item.qty);
+        const price = Number(item.price) || 0;
+        const qty = Number(item.qty) || 0;
+        return sum + (price * qty);
       }, 0);
 
       // Lấy cấu hình thuế và tính thuế

@@ -65,6 +65,7 @@ export default function PosPage() {
   const [clearedTables, setClearedTables] = useState<Set<string>>(new Set());
   const [showBill, setShowBill] = useState(false);
   const [billData, setBillData] = useState<any>(null);
+  const [taxInfo, setTaxInfo] = useState<any>(null); // Thông tin thuế từ backend
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [showTableModal, setShowTableModal] = useState(false);
   const [showMenuModal, setShowMenuModal] = useState(false);
@@ -82,6 +83,41 @@ export default function PosPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Tính thuế khi billData thay đổi
+  useEffect(() => {
+    const calculateTax = async () => {
+      if (billData && billData.subtotal && showBill) {
+        try {
+          const response = await fetch('/api/print/calculate-tax', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ subtotal: Number(billData.subtotal) })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              setTaxInfo(result.taxCalculation);
+              // Cập nhật billData với thông tin thuế mới
+              setBillData((prev: any) => ({
+                ...prev,
+                tax: result.taxCalculation.vatAmount,
+                serviceCharge: result.taxCalculation.serviceChargeAmount,
+                total: result.taxCalculation.total
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('❌ Lỗi khi tính thuế:', error);
+        }
+      }
+    };
+
+    calculateTax();
+  }, [billData?.subtotal, showBill]); // Tính lại khi subtotal thay đổi hoặc mở bill modal
 
   const loadData = async () => {
     try {
@@ -880,8 +916,8 @@ export default function PosPage() {
 
       {/* Bill Modal */}
       {showBill && billData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
-          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full mx-2 sm:mx-4 print:shadow-none print:border-0">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 print:fixed print:inset-0 print:bg-white print:p-0 print:m-0 bill-print-content">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full mx-2 sm:mx-4 print:shadow-none print:border-0 print:w-full print:max-w-none print:m-0 print:p-4">
             <div className="text-center mb-4">
               <h2 className="text-xl font-bold">HÓA ĐƠN THANH TOÁN</h2>
               <p className="text-sm text-gray-600">Nhà Tôi Restaurant</p>
@@ -916,30 +952,48 @@ export default function PosPage() {
             <div className="border-t pt-2 mb-4">
               <div className="flex justify-between text-sm">
                 <span>Tạm tính:</span>
-                <span>{Number(billData.subtotal).toLocaleString('vi-VN')} ₫</span>
+                <span>{Number(billData.subtotal || 0).toLocaleString('vi-VN')} ₫</span>
               </div>
-              {billData.tax && Number(billData.tax) > 0 && (
+              
+              {/* Hiển thị VAT nếu có */}
+              {taxInfo?.vatEnabled && taxInfo.vatAmount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>{taxInfo.taxName || 'VAT'} ({taxInfo.vatRate}%):</span>
+                  <span>{taxInfo.vatAmount.toLocaleString('vi-VN')} ₫</span>
+                </div>
+              )}
+              
+              {/* Hiển thị Phí phục vụ nếu có */}
+              {taxInfo?.serviceChargeEnabled && taxInfo.serviceChargeAmount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>{taxInfo.serviceChargeName || 'Phí phục vụ'} ({taxInfo.serviceChargeRate}%):</span>
+                  <span>{taxInfo.serviceChargeAmount.toLocaleString('vi-VN')} ₫</span>
+                </div>
+              )}
+              
+              {/* Fallback hiển thị thuế cũ nếu chưa có taxInfo (backward compatibility) */}
+              {!taxInfo && billData.tax && Number(billData.tax) > 0 && (
                 <div className="flex justify-between text-sm">
                   <span>Thuế:</span>
                   <span>{Number(billData.tax).toLocaleString('vi-VN')} ₫</span>
                 </div>
               )}
-              {/* Debug: Hiển thị giá trị thuế để kiểm tra */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Debug - Tax value:</span>
-                  <span>{JSON.stringify(billData.tax)}</span>
-                </div>
-              )}
+              
               {billData.discount && billData.discount > 0 && (
                 <div className="flex justify-between text-sm text-red-600">
                   <span>Giảm giá:</span>
                   <span>-{Number(billData.discount).toLocaleString('vi-VN')} ₫</span>
                 </div>
               )}
+              
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>TỔNG CỘNG:</span>
-                <span className="text-green-600">{Number(billData.total).toLocaleString('vi-VN')} ₫</span>
+                <span className="text-green-600">
+                  {taxInfo?.total 
+                    ? taxInfo.total.toLocaleString('vi-VN')
+                    : Number(billData.total || 0).toLocaleString('vi-VN')
+                  } ₫
+                </span>
               </div>
             </div>
 
@@ -1015,53 +1069,117 @@ export default function PosPage() {
               <button
                 onClick={async () => {
                   try {
-                    // Chuẩn bị dữ liệu hóa đơn cho VietQR
-                    const billDataForVietQR = {
+                    // Chuẩn bị dữ liệu hóa đơn
+                    // Backend sẽ tự tính thuế từ cấu hình admin
+                    
+                    // Validate billData.items
+                    if (!billData.items || !Array.isArray(billData.items) || billData.items.length === 0) {
+                      alert('❌ Không có món ăn nào trong hóa đơn. Vui lòng kiểm tra lại!');
+                      return;
+                    }
+                    
+                    const printBillData = {
                       id: billData.id,
-                      cashier: user ? `${user.firstName} ${user.lastName}`.trim() : 'Thu ngân',
-                      date: new Date().toLocaleDateString('vi-VN'),
-                      startTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+                      table: selectedTable?.name || 'Tại quầy',
+                      time: new Date().toLocaleTimeString('vi-VN'),
                       items: billData.items.map((item: any) => ({
                         name: item.menu?.name || item.name || 'Món ăn',
                         qty: item.quantity || 1,
                         price: item.price || 0
-                      })),
-                      total: billData.total || 0
+                      }))
+                      // Backend sẽ tự tính subtotal, thuế, và total từ items
                     };
 
-                    console.log('📋 Dữ liệu hóa đơn VietQR:', billDataForVietQR);
+                    console.log('📋 Dữ liệu hóa đơn:', printBillData);
 
-                    // Gọi API in hóa đơn VietQR
-                    const response = await fetch('/api/printer/vietqr/print-bill', {
+                    // Gọi API in hóa đơn
+                    // Backend sẽ tự tính thuế từ cấu hình admin
+                    const response = await fetch('/api/print/print-bill', {
                       method: 'POST',
                       headers: {
                         'Content-Type': 'application/json',
                       },
-                      body: JSON.stringify(billDataForVietQR)
+                      body: JSON.stringify(printBillData)
                     });
                     
                     if (response.ok) {
                       const result = await response.json();
                       
                       if (result.success) {
-                        alert('✅ Hóa đơn VietQR đã được in thành công!\n\n🧾 Layout chuẩn với QR thanh toán động\n💳 Khách có thể quét QR để chuyển khoản\n🖨️ In qua máy Xprinter T80L');
+                        alert('✅ Hóa đơn đã được in thành công!\n\n🧾 Layout đẹp, rõ ràng\n🖨️ In qua máy Xprinter T80L');
                       } else {
-                        alert('❌ Lỗi khi in hóa đơn VietQR: ' + result.message);
+                        alert('❌ Lỗi khi in hóa đơn: ' + result.message);
                       }
                     } else {
-                      alert('❌ Lỗi khi gọi API in hóa đơn VietQR. Vui lòng thử lại.');
+                      alert('❌ Lỗi khi gọi API in hóa đơn. Vui lòng thử lại.');
                     }
                   } catch (error) {
-                    console.error('❌ Error printing VietQR receipt:', error);
-                    alert('❌ Lỗi khi in hóa đơn VietQR: ' + (error instanceof Error ? error.message : String(error)));
+                    console.error('❌ Error printing receipt:', error);
+                    alert('❌ Lỗi khi in hóa đơn: ' + (error instanceof Error ? error.message : String(error)));
                   }
                 }}
-                className="flex-1 bg-purple-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-purple-600 text-sm sm:text-base"
+                className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
+                title="In trực tiếp qua máy in ESC/POS (USB/LAN)"
               >
-                🧾 In VietQR (QR Bank)
+                🖨️ In máy Xprinter
+              </button>
+              
+              {/* Nút in qua hộp thoại in của browser */}
+              <button
+                onClick={() => {
+                  // In qua hộp thoại print dialog của browser
+                  window.print();
+                }}
+                className="flex-1 bg-indigo-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-indigo-600 text-sm sm:text-base"
+                title="In qua hộp thoại in của máy tính (PDF hoặc máy in hệ thống)"
+              >
+                🖨️ In qua máy tính
               </button>
               <button
-                onClick={() => setShowBill(false)}
+                onClick={async () => {
+                  try {
+                    // Chuẩn bị dữ liệu QR
+                    const qrData = {
+                      amount: billData.total || 0,
+                      billId: billData.id
+                    };
+
+                    console.log('💳 Dữ liệu QR:', qrData);
+
+                    // Gọi API in QR
+                    const response = await fetch('/api/print/print-qr', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify(qrData)
+                    });
+                    
+                    if (response.ok) {
+                      const result = await response.json();
+                      
+                      if (result.success) {
+                        alert('✅ QR thanh toán đã được in thành công!\n\n💳 QR VietQR động\n📱 Khách có thể quét để chuyển khoản\n🖨️ In riêng biệt');
+                      } else {
+                        alert('❌ Lỗi khi in QR: ' + result.message);
+                      }
+                    } else {
+                      alert('❌ Lỗi khi gọi API in QR. Vui lòng thử lại.');
+                    }
+                  } catch (error) {
+                    console.error('❌ Error printing QR:', error);
+                    alert('❌ Lỗi khi in QR: ' + (error instanceof Error ? error.message : String(error)));
+                  }
+                }}
+                className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
+              >
+                💳 In QR thanh toán
+              </button>
+              <button
+                onClick={() => {
+                  setShowBill(false);
+                  setTaxInfo(null); // Reset tax info khi đóng
+                }}
                 className="flex-1 bg-gray-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-600 text-sm sm:text-base"
               >
                 Đóng
