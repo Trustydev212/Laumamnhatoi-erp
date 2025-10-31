@@ -104,3 +104,71 @@
     display: none;
   }
 }
+
+/* Print styles */
+@media print {
+  body {
+    @apply bg-white;
+  }
+  
+  /* Ẩn mọi thứ trừ hóa đơn */
+  body > *:not(.bill-print-content) {
+    display: none !important;
+  }
+  
+  /* Ẩn overlay và các phần không cần thiết */
+  .fixed.inset-0 {
+    position: static !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* Ẩn tất cả các button khi in */
+  button,
+  .bill-print-content button,
+  button[class*="bg-"],
+  .flex button {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* Ẩn div chứa button khi in */
+  .no-print,
+  .bill-print-content .no-print {
+    display: none !important;
+  }
+  
+  /* Ẩn div flex chứa button */
+  .flex.flex-col,
+  .flex.flex-row {
+    display: none !important;
+  }
+  
+  /* Chỉ hiển thị lại flex nếu không có button */
+  .flex:not(:has(button)) {
+    display: flex !important;
+  }
+  
+  /* Hiển thị hóa đơn full page */
+  .print\:w-full {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  /* Đảm bảo text đen trên nền trắng */
+  .text-white {
+    color: #000 !important;
+  }
+  
+  .bg-black {
+    background: white !important;
+  }
+  
+  /* Không chia trang */
+  page-break-inside: avoid;
+}

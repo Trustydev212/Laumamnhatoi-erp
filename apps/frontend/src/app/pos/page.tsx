@@ -991,7 +991,7 @@ export default function PosPage() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 no-print">
               <button
                 onClick={async () => {
                   try {
