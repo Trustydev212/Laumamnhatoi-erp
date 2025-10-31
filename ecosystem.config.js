@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: "laumam-backend",
-      script: "apps/backend/dist/main.js",
-      cwd: "/home/deploy/Laumamnhatoi-erp",
+      script: "dist/src/main.js",
+      cwd: "/home/deploy/Laumamnhatoi-erp/apps/backend",
       env: {
         NODE_ENV: "production",
         PORT: 3001,

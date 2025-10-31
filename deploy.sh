@@ -100,9 +100,19 @@ cd apps/backend
 npm install
 npm run build
 
-if [ ! -f "dist/src/main.js" ]; then
-    print_error "Backend build failed - dist/src/main.js not found"
+# Check if build output exists (NestJS may output to dist/src/main.js or dist/main.js)
+if [ ! -f "dist/src/main.js" ] && [ ! -f "dist/main.js" ]; then
+    print_error "Backend build failed - dist/src/main.js or dist/main.js not found"
+    print_error "Checking build output..."
+    ls -la dist/ 2>/dev/null || echo "dist directory does not exist"
     exit 1
+fi
+
+# Verify which path exists and update ecosystem config if needed
+if [ -f "dist/main.js" ]; then
+    print_status "ℹ️  Backend output is at dist/main.js"
+elif [ -f "dist/src/main.js" ]; then
+    print_status "ℹ️  Backend output is at dist/src/main.js"
 fi
 
 print_success "✅ Backend build completed"
@@ -137,6 +147,16 @@ pkill -9 -f "node dist/main" 2>/dev/null || true
 
 # Start services with ecosystem config
 print_status "🚀 Starting services with PM2..."
+cd /home/deploy/Laumamnhatoi-erp
+
+# Verify backend build output exists before starting
+if [ ! -f "apps/backend/dist/src/main.js" ] && [ ! -f "apps/backend/dist/main.js" ]; then
+    print_error "Backend file not found! Cannot start PM2."
+    print_error "Expected: apps/backend/dist/src/main.js or apps/backend/dist/main.js"
+    exit 1
+fi
+
+# Start PM2 services
 if [ "$FRONTEND_BUILD_FAILED" -eq 1 ]; then
     print_warning "⚠️  Frontend build failed, only starting backend..."
     pm2 start ecosystem.config.js --only laumam-backend
