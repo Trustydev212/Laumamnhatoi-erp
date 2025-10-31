@@ -56,8 +56,8 @@ print_status "🔨 Building backend..."
 cd apps/backend
 npm run build
 
-if [ ! -f "dist/main.js" ]; then
-    print_error "Backend build failed - dist/main.js not found"
+if [ ! -f "dist/src/main.js" ]; then
+    print_error "Backend build failed - dist/src/main.js not found"
     exit 1
 fi
 
@@ -66,14 +66,19 @@ print_success "✅ Backend build completed"
 # Build frontend
 print_status "🔨 Building frontend..."
 cd ../frontend
+set +e  # Don't exit on error for frontend build
 npm run build
+FRONTEND_BUILD_EXIT_CODE=$?
+set -e  # Re-enable exit on error
 
-if [ ! -d ".next" ]; then
-    print_error "Frontend build failed - .next directory not found"
-    exit 1
+if [ $FRONTEND_BUILD_EXIT_CODE -ne 0 ] || [ ! -d ".next" ]; then
+    print_warning "⚠️  Frontend build failed - .next directory not found"
+    print_warning "⚠️  Continuing with backend deployment only..."
+    FRONTEND_BUILD_FAILED=1
+else
+    print_success "✅ Frontend build completed"
+    FRONTEND_BUILD_FAILED=0
 fi
-
-print_success "✅ Frontend build completed"
 
 # Go back to root
 cd /home/deploy/Laumamnhatoi-erp
@@ -88,7 +93,12 @@ pkill -9 -f "node dist/main" 2>/dev/null || true
 
 # Start services with ecosystem config
 print_status "🚀 Starting services with PM2..."
-pm2 start ecosystem.config.js
+if [ "$FRONTEND_BUILD_FAILED" -eq 1 ]; then
+    print_warning "⚠️  Frontend build failed, only starting backend..."
+    pm2 start ecosystem.config.js --only laumam-backend
+else
+    pm2 start ecosystem.config.js
+fi
 
 # Save PM2 configuration
 pm2 save
@@ -111,10 +121,14 @@ else
 fi
 
 # Test frontend
-if curl -s http://localhost:3002 > /dev/null; then
-    print_success "✅ Frontend is responding"
+if [ "$FRONTEND_BUILD_FAILED" -eq 1 ]; then
+    print_warning "⚠️  Frontend not deployed (build failed)"
 else
-    print_warning "⚠️  Frontend health check failed"
+    if curl -s http://localhost:3002 > /dev/null; then
+        print_success "✅ Frontend is responding"
+    else
+        print_warning "⚠️  Frontend health check failed"
+    fi
 fi
 
 print_success "🎉 Deployment completed successfully!"

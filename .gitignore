@@ -121,6 +121,7 @@ public/uploads/
 # PM2 logs
 pm2.log
 pids/
+ecosystem.local.js
 
 # Production environment files (keep templates)
 apps/backend/.env
