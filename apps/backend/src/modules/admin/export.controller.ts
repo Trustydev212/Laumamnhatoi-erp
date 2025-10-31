@@ -104,4 +104,97 @@ export class ExportController {
       res.status(500).json({ message: 'Export failed' });
     }
   }
+
+  @Post('sales-report')
+  @ApiOperation({ summary: 'Export báo cáo tổng hợp bán hàng' })
+  @ApiResponse({ status: 200, description: 'Sales report exported successfully' })
+  async exportSalesReport(
+    @Body() body: { format: 'excel' | 'pdf'; filters?: any },
+    @Res() res: Response
+  ) {
+    try {
+      const buffer = await this.exportService.exportSalesReport(body.format, body.filters);
+      
+      const contentType = body.format === 'excel' 
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/pdf';
+      
+      const filename = `sales_report_${new Date().toISOString().split('T')[0]}.${
+        body.format === 'excel' ? 'xlsx' : 'pdf'
+      }`;
+
+      res.set({
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': Buffer.byteLength(buffer).toString()
+      });
+
+      res.send(buffer);
+    } catch (error) {
+      console.error('Export sales report error:', error);
+      res.status(500).json({ message: 'Export failed' });
+    }
+  }
+
+  @Post('inventory-report')
+  @ApiOperation({ summary: 'Export báo cáo tồn kho' })
+  @ApiResponse({ status: 200, description: 'Inventory report exported successfully' })
+  async exportInventoryReport(
+    @Body() body: { format: 'excel' | 'pdf'; filters?: any },
+    @Res() res: Response
+  ) {
+    try {
+      const buffer = await this.exportService.exportInventoryReport(body.format, body.filters);
+      
+      const contentType = body.format === 'excel' 
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/pdf';
+      
+      const filename = `inventory_report_${new Date().toISOString().split('T')[0]}.${
+        body.format === 'excel' ? 'xlsx' : 'pdf'
+      }`;
+
+      res.set({
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': Buffer.byteLength(buffer).toString()
+      });
+
+      res.send(buffer);
+    } catch (error) {
+      console.error('Export inventory report error:', error);
+      res.status(500).json({ message: 'Export failed' });
+    }
+  }
+
+  @Post('revenue-report')
+  @ApiOperation({ summary: 'Export báo cáo doanh thu' })
+  @ApiResponse({ status: 200, description: 'Revenue report exported successfully' })
+  async exportRevenueReport(
+    @Body() body: { format: 'excel' | 'pdf'; filters?: any },
+    @Res() res: Response
+  ) {
+    try {
+      const buffer = await this.exportService.exportRevenueReport(body.format, body.filters);
+      
+      const contentType = body.format === 'excel' 
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/pdf';
+      
+      const filename = `revenue_report_${new Date().toISOString().split('T')[0]}.${
+        body.format === 'excel' ? 'xlsx' : 'pdf'
+      }`;
+
+      res.set({
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': Buffer.byteLength(buffer).toString()
+      });
+
+      res.send(buffer);
+    } catch (error) {
+      console.error('Export revenue report error:', error);
+      res.status(500).json({ message: 'Export failed' });
+    }
+  }
 }

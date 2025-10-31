@@ -916,10 +916,20 @@ export default function AdminPage() {
             />
             
             {/* Data Export */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               <DataExport dataType="users" />
               <DataExport dataType="logs" />
               <DataExport dataType="analytics" />
+            </div>
+            
+            {/* Báo cáo Excel */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-xl font-semibold mb-4">Xuất Báo Cáo Excel</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <DataExport dataType="sales-report" />
+                <DataExport dataType="inventory-report" />
+                <DataExport dataType="revenue-report" />
+              </div>
             </div>
             
             {/* Overview Cards */}

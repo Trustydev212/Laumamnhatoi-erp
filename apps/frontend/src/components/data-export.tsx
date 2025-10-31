@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { api } from '@/lib/api';
 
 interface DataExportProps {
-  dataType: 'users' | 'logs' | 'analytics' | 'orders';
+  dataType: 'users' | 'logs' | 'analytics' | 'orders' | 'sales-report' | 'inventory-report' | 'revenue-report';
   filters?: any;
 }
 
@@ -16,7 +16,15 @@ export default function DataExport({ dataType, filters = {} }: DataExportProps) 
     try {
       setIsExporting(true);
       
-      const response = await api.post(`/admin/export/${dataType}`, {
+      // Map dataType to correct endpoint
+      const endpointMap: Record<string, string> = {
+        'sales-report': '/admin/export/sales-report',
+        'inventory-report': '/admin/export/inventory-report',
+        'revenue-report': '/admin/export/revenue-report'
+      };
+      
+      const endpoint = endpointMap[dataType] || `/admin/export/${dataType}`;
+      const response = await api.post(endpoint, {
         format: exportFormat,
         filters
       }, {
@@ -56,6 +64,9 @@ export default function DataExport({ dataType, filters = {} }: DataExportProps) 
       case 'logs': return 'System Logs';
       case 'analytics': return 'Analytics Data';
       case 'orders': return 'Orders';
+      case 'sales-report': return 'Báo Cáo Tổng Hợp Bán Hàng';
+      case 'inventory-report': return 'Báo Cáo Tồn Kho';
+      case 'revenue-report': return 'Báo Cáo Doanh Thu';
       default: return 'Data';
     }
   };
