@@ -15,6 +15,12 @@ const isMobile = typeof window !== 'undefined' &&
 // For production with Nginx proxy, use relative path /api
 // For development/ngrok, use full URL
 const getAPI_URL = () => {
+  // Detect if running in production (not localhost)
+  const isProduction = typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1' &&
+    !window.location.hostname.includes('ngrok');
+  
   // If NEXT_PUBLIC_API_URL is set and starts with /, use it as-is (relative path for proxy)
   if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL.startsWith('/')) {
     return process.env.NEXT_PUBLIC_API_URL;
@@ -23,6 +29,11 @@ const getAPI_URL = () => {
   // If NEXT_PUBLIC_API_URL is set (full URL), use it
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Auto-detect: production uses /api proxy, dev uses localhost
+  if (isProduction) {
+    return '/api';
   }
   
   // Fallback: ngrok or localhost

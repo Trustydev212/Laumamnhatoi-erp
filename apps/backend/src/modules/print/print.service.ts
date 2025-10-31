@@ -52,10 +52,15 @@ export class PrintService {
         };
       }
 
-      // Tính tổng tiền từ items
+      // Tính tổng tiền từ items - handle cả string và number
       const subtotal = bill.items.reduce((sum: number, item: any) => {
-        const price = Number(item.price) || 0;
-        const qty = Number(item.qty) || 0;
+        // Convert price và qty sang number (handle cả string "12000" và number 12000)
+        const price = typeof item.price === 'string' 
+          ? parseFloat(item.price.replace(/[^\d.-]/g, '')) || 0
+          : Number(item.price) || 0;
+        const qty = typeof item.qty === 'string'
+          ? parseInt(item.qty, 10) || 0
+          : Number(item.qty) || 0;
         return sum + (price * qty);
       }, 0);
 
@@ -113,9 +118,17 @@ export class PrintService {
               .style('b').text('STT  Món ăn                SL   Giá').style('normal');
 
             bill.items.forEach((item: any, i: number) => {
-              const itemTotal = item.price * item.qty;
+              // Convert price và qty sang number để tính toán
+              const price = typeof item.price === 'string' 
+                ? parseFloat(item.price.replace(/[^\d.-]/g, '')) || 0
+                : Number(item.price) || 0;
+              const qty = typeof item.qty === 'string'
+                ? parseInt(item.qty, 10) || 0
+                : Number(item.qty) || 0;
+              const itemTotal = price * qty;
+              const itemName = item.name || 'Món ăn';
               printer.text(
-                `${(i + 1).toString().padEnd(3)} ${item.name.padEnd(18)} ${item.qty.toString().padEnd(3)} ${itemTotal.toLocaleString().padStart(8)}`
+                `${(i + 1).toString().padEnd(3)} ${itemName.padEnd(18)} ${qty.toString().padEnd(3)} ${itemTotal.toLocaleString().padStart(8)}`
               );
             });
 

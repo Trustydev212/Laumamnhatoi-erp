@@ -48,21 +48,15 @@ export class PrintController {
       // Gọi service in hóa đơn
       const result = await this.printService.printBill(body);
 
-      if (result.success) {
-        res.status(200).json({
-          success: true,
-          message: result.message,
-          timestamp: new Date().toISOString(),
-          billId: body.id
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: result.message,
-          timestamp: new Date().toISOString(),
-          billId: body.id
-        });
-      }
+      // Always return 200 if service processed (even if printer not available)
+      // Service will return success=true with warning message if printer unavailable
+      res.status(200).json({
+        success: result.success,
+        message: result.message,
+        timestamp: new Date().toISOString(),
+        billId: body.id,
+        printed: result.success && !result.message.includes('không khả dụng')
+      });
 
     } catch (error) {
       console.error('❌ Lỗi trong controller printBill:', error);
@@ -96,22 +90,16 @@ export class PrintController {
       // Gọi service in QR
       const result = await this.printService.printPaymentQR(body);
 
-      if (result.success) {
-        res.status(200).json({
-          success: true,
-          message: result.message,
-          timestamp: new Date().toISOString(),
-          billId: body.billId,
-          amount: body.amount
-        });
-      } else {
-        res.status(500).json({
-          success: false,
-          message: result.message,
-          timestamp: new Date().toISOString(),
-          billId: body.billId
-        });
-      }
+      // Always return 200 if service processed (even if printer not available)
+      // Service will return success=true with warning message if printer unavailable
+      res.status(200).json({
+        success: result.success,
+        message: result.message,
+        timestamp: new Date().toISOString(),
+        billId: body.billId,
+        amount: body.amount,
+        printed: result.success && !result.message.includes('không khả dụng')
+      });
 
     } catch (error) {
       console.error('❌ Lỗi trong controller printQR:', error);
