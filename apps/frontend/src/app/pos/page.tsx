@@ -1108,14 +1108,20 @@ export default function PosPage() {
                     console.log('📋 Gọi backend render bill HTML:', printBillData);
 
                     // Gọi backend để render HTML
+                    // Axios với responseType: 'text' sẽ trả về response.data là string HTML
                     const response = await api.post('/print/render-bill-html', printBillData, {
-                      responseType: 'text' // Nhận HTML text
+                      responseType: 'text' // Nhận HTML text thay vì JSON
                     });
+
+                    // response.data sẽ là HTML string khi responseType: 'text'
+                    const htmlContent = typeof response.data === 'string' 
+                      ? response.data 
+                      : response.data?.data || String(response.data);
 
                     // Mở cửa sổ mới với HTML và in
                     const printWindow = window.open('', '_blank');
                     if (printWindow) {
-                      printWindow.document.write(response.data);
+                      printWindow.document.write(htmlContent);
                       printWindow.document.close();
                       
                       // Đợi một chút để content load, rồi mở print dialog
