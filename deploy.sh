@@ -149,45 +149,122 @@ pkill -9 -f "next start" 2>/dev/null || true
 pkill -9 -f "next-server" 2>/dev/null || true
 pkill -9 node 2>/dev/null || true
 
-# Kill processes using ports 3001 and 3002 - multiple attempts
+# Kill processes using ports 3001 and 3002 - multiple attempts with retry
 print_status "🔌 Freeing ports 3001 and 3002..."
+MAX_RETRIES=5
 for port in 3001 3002; do
-    # Try multiple methods
-    if command -v lsof >/dev/null 2>&1; then
-        for pid in $(lsof -ti:${port} 2>/dev/null); do
-            kill -9 $pid 2>/dev/null || true
+    RETRY=0
+    while [ $RETRY -lt $MAX_RETRIES ]; do
+        RETRY=$((RETRY + 1))
+        print_status "  Attempt $RETRY/$MAX_RETRIES for port ${port}..."
+        
+        # Try multiple methods to find and kill processes
+        PIDS_TO_KILL=""
+        
+        if command -v lsof >/dev/null 2>&1; then
+            PIDS_TO_KILL="$PIDS_TO_KILL $(lsof -ti:${port} 2>/dev/null)"
+        fi
+        
+        if command -v fuser >/dev/null 2>&1; then
+            FUSER_PIDS=$(fuser ${port}/tcp 2>/dev/null | awk '{print $1}')
+            if [ ! -z "$FUSER_PIDS" ]; then
+                PIDS_TO_KILL="$PIDS_TO_KILL $FUSER_PIDS"
+            fi
+            fuser -k ${port}/tcp 2>/dev/null || true
+        fi
+        
+        # Fallback using netstat
+        if command -v netstat >/dev/null 2>&1; then
+            NETSTAT_PIDS=$(netstat -tlnp 2>/dev/null | grep :${port} | awk '{print $7}' | cut -d'/' -f1 | grep -v '-' | xargs)
+            if [ ! -z "$NETSTAT_PIDS" ]; then
+                PIDS_TO_KILL="$PIDS_TO_KILL $NETSTAT_PIDS"
+            fi
+        fi
+        
+        # Fallback using ss
+        if command -v ss >/dev/null 2>&1; then
+            SS_PIDS=$(ss -tlnp 2>/dev/null | grep :${port} | awk '{print $6}' | cut -d',' -f2 | cut -d'=' -f2 | grep -v '^$' | xargs)
+            if [ ! -z "$SS_PIDS" ]; then
+                PIDS_TO_KILL="$PIDS_TO_KILL $SS_PIDS"
+            fi
+        fi
+        
+        # Kill all found PIDs
+        for pid in $PIDS_TO_KILL; do
+            if [ ! -z "$pid" ] && [ "$pid" != "-" ]; then
+                print_status "    Killing PID $pid on port ${port}..."
+                kill -9 $pid 2>/dev/null || true
+            fi
         done
-    fi
-    
-    if command -v fuser >/dev/null 2>&1; then
-        fuser -k ${port}/tcp 2>/dev/null || true
-    fi
-    
-    # Fallback using netstat
-    if command -v netstat >/dev/null 2>&1; then
-        netstat -tlnp 2>/dev/null | grep :${port} | awk '{print $7}' | cut -d'/' -f1 | xargs kill -9 2>/dev/null || true
-    fi
-    
-    # Fallback using ss
-    if command -v ss >/dev/null 2>&1; then
-        ss -tlnp 2>/dev/null | grep :${port} | awk '{print $6}' | cut -d',' -f2 | cut -d'=' -f2 | xargs kill -9 2>/dev/null || true
-    fi
+        
+        # Wait a moment
+        sleep 2
+        
+        # Check if port is now free
+        PORT_IN_USE=false
+        if command -v lsof >/dev/null 2>&1; then
+            if lsof -ti:${port} >/dev/null 2>&1; then
+                PORT_IN_USE=true
+            fi
+        elif command -v netstat >/dev/null 2>&1; then
+            if netstat -tln 2>/dev/null | grep -q ":${port} "; then
+                PORT_IN_USE=true
+            fi
+        elif command -v ss >/dev/null 2>&1; then
+            if ss -tln 2>/dev/null | grep -q ":${port} "; then
+                PORT_IN_USE=true
+            fi
+        fi
+        
+        if [ "$PORT_IN_USE" = false ]; then
+            print_success "  ✅ Port ${port} is now free"
+            break
+        else
+            if [ $RETRY -lt $MAX_RETRIES ]; then
+                print_warning "  ⚠️  Port ${port} still in use, retrying..."
+            else
+                print_error "  ❌ Port ${port} still in use after $MAX_RETRIES attempts"
+            fi
+        fi
+    done
 done
 
-# Wait longer for ports to be freed and verify
-print_status "⏳ Waiting for ports to be freed..."
-sleep 5
+# Final verification and wait
+print_status "⏳ Final wait for ports to stabilize..."
+sleep 3
 
-# Verify ports are free
+# Final verification before starting services
+print_status "🔍 Final port verification..."
+PORTS_FREE=true
 for port in 3001 3002; do
+    PORT_IN_USE=false
     if command -v lsof >/dev/null 2>&1; then
         if lsof -ti:${port} >/dev/null 2>&1; then
-            print_warning "⚠️  Port ${port} still in use, attempting force kill..."
-            lsof -ti:${port} | xargs kill -9 2>/dev/null || true
-            sleep 2
+            PORT_IN_USE=true
+            print_error "❌ Port ${port} is STILL in use! Process: $(lsof -ti:${port} | head -1)"
+        fi
+    elif command -v netstat >/dev/null 2>&1; then
+        if netstat -tln 2>/dev/null | grep -q ":${port} "; then
+            PORT_IN_USE=true
+            print_error "❌ Port ${port} is STILL in use!"
         fi
     fi
+    
+    if [ "$PORT_IN_USE" = true ]; then
+        PORTS_FREE=false
+        # Last resort: kill everything using the port
+        print_warning "⚠️  Last resort: killing ALL processes on port ${port}..."
+        lsof -ti:${port} 2>/dev/null | xargs kill -9 2>/dev/null || true
+        fuser -k ${port}/tcp 2>/dev/null || true
+        sleep 2
+    else
+        print_success "✅ Port ${port} verified free"
+    fi
 done
+
+if [ "$PORTS_FREE" = false ]; then
+    print_warning "⚠️  Some ports may still be in use, but continuing anyway..."
+fi
 
 # Start services with ecosystem config
 print_status "🚀 Starting services with PM2..."
