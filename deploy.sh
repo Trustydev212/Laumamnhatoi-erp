@@ -57,6 +57,13 @@ fi
 git fetch origin main
 git reset --hard origin/main
 
+# Force checkout specific files that might have conflicts
+print_status "🔄 Ensuring clean file state..."
+git checkout HEAD -- apps/backend/src/app.module.ts
+git checkout HEAD -- apps/backend/src/modules/printer/printer.module.ts
+git checkout HEAD -- apps/backend/src/modules/printer/printer.controller.ts
+git checkout HEAD -- apps/backend/src/modules/printer/printer.service.ts
+
 # Install/update dependencies
 print_status "📦 Installing dependencies..."
 npm install
