@@ -100,9 +100,8 @@ export default function PosPage() {
               ...prev,
               tax: response.data.taxCalculation.vatAmount,
               serviceCharge: response.data.taxCalculation.serviceChargeAmount,
-                total: result.taxCalculation.total
-              }));
-            }
+              total: response.data.taxCalculation.total
+            }));
           }
         } catch (error) {
           console.error('❌ Lỗi khi tính thuế:', error);
