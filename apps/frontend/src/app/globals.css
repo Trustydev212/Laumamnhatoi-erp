@@ -110,9 +110,9 @@
   body {
     @apply bg-white;
   }
-  
-  /* Ẩn mọi thứ trừ hóa đơn */
-  body > *:not(.bill-print-content) {
+
+  /* Ẩn mọi thứ trừ hóa đơn và QR */
+  body > *:not(.bill-print-content):not(.qr-print-content) {
     display: none !important;
   }
   
@@ -150,8 +150,10 @@
     display: flex !important;
   }
   
-  /* Hiển thị hóa đơn full page */
-  .print\:w-full {
+  /* Hiển thị hóa đơn và QR full page */
+  .print\:w-full,
+  .bill-print-content,
+  .qr-print-content {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -159,16 +161,25 @@
     box-shadow: none !important;
     border: none !important;
   }
-  
+
+  /* Đảm bảo QR image hiển thị khi in */
+  .qr-print-content img {
+    width: 256px !important;
+    height: 256px !important;
+    max-width: 100% !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
   /* Đảm bảo text đen trên nền trắng */
   .text-white {
     color: #000 !important;
   }
-  
+
   .bg-black {
     background: white !important;
   }
-  
+
   /* Không chia trang */
   page-break-inside: avoid;
 }

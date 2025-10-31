@@ -237,6 +237,58 @@ export class PrintController {
   }
 
   /**
+   * Lấy cấu hình VietQR
+   * GET /api/print/vietqr-config
+   */
+  @Get('vietqr-config')
+  async getVietQRConfig(@Res() res: Response) {
+    try {
+      const config = await this.printService.getVietQRConfig();
+      
+      res.status(200).json({
+        success: true,
+        vietQRConfig: config,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ Lỗi trong getVietQRConfig:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy cấu hình VietQR: ' + (error instanceof Error ? error.message : String(error)),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
+   * Cập nhật cấu hình VietQR
+   * POST /api/print/vietqr-config
+   */
+  @Post('vietqr-config')
+  async updateVietQRConfig(@Body() body: any, @Res() res: Response) {
+    try {
+      console.log('📝 Nhận request cập nhật cấu hình VietQR:', body);
+
+      await this.printService.updateVietQRConfig(body);
+
+      res.status(200).json({
+        success: true,
+        message: 'Cấu hình VietQR đã được cập nhật thành công!',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('❌ Lỗi trong updateVietQRConfig:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi cập nhật cấu hình VietQR: ' + (error instanceof Error ? error.message : String(error)),
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  /**
    * Tính thuế và trả về cho frontend hiển thị
    * POST /api/print/calculate-tax
    */

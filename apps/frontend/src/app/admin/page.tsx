@@ -134,6 +134,12 @@ export default function AdminPage() {
     serviceChargeName: 'Phí phục vụ'
   });
   const [taxConfigLoading, setTaxConfigLoading] = useState(false);
+  const [vietQRConfig, setVietQRConfig] = useState({
+    acqId: 970436,
+    accountNo: '0123456789',
+    accountName: 'LAU MAM NHA TOI'
+  });
+  const [vietQRConfigLoading, setVietQRConfigLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -162,6 +168,32 @@ export default function AdminPage() {
       loadTaxConfig();
     }
   }, [activeTab]);
+
+  // Load VietQR config when vietqr-settings tab is active
+  useEffect(() => {
+    if (activeTab === 'vietqr-settings') {
+      loadVietQRConfig();
+    }
+  }, [activeTab]);
+
+  const loadVietQRConfig = async () => {
+    try {
+      setVietQRConfigLoading(true);
+      const response = await api.get('/print/vietqr-config');
+      if (response.data.success && response.data.vietQRConfig) {
+        setVietQRConfig({
+          acqId: response.data.vietQRConfig.acqId || 970436,
+          accountNo: response.data.vietQRConfig.accountNo || '0123456789',
+          accountName: response.data.vietQRConfig.accountName || 'LAU MAM NHA TOI'
+        });
+      }
+    } catch (error) {
+      console.error('Error loading VietQR config:', error);
+      // Giữ giá trị mặc định nếu không load được
+    } finally {
+      setVietQRConfigLoading(false);
+    }
+  };
 
   const loadTaxConfig = async () => {
     try {
@@ -411,6 +443,12 @@ export default function AdminPage() {
               onClick={() => setActiveTab('tax-settings')}
             >
               Cấu hình thuế
+            </button>
+            <button
+              className={`py-2 px-4 text-sm font-medium ${activeTab === 'vietqr-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('vietqr-settings')}
+            >
+              Cấu hình VietQR
             </button>
           </div>
         </div>
@@ -1491,6 +1529,132 @@ export default function AdminPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                   Lưu cấu hình ngân hàng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VietQR Settings Tab */}
+        {activeTab === 'vietqr-settings' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold mb-4">Cấu hình VietQR</h2>
+              <p className="text-gray-600 mb-6">
+                Thiết lập thông tin ngân hàng để tạo QR code thanh toán VietQR động
+              </p>
+              
+              <div className="max-w-md space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mã ngân hàng (AcqId)</label>
+                  <select 
+                    value={vietQRConfig.acqId}
+                    onChange={(e) => {
+                      const acqId = parseInt(e.target.value);
+                      setVietQRConfig({ ...vietQRConfig, acqId });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="970436">970436 - Vietcombank</option>
+                    <option value="970407">970407 - Techcombank</option>
+                    <option value="970418">970418 - BIDV</option>
+                    <option value="970405">970405 - Agribank</option>
+                    <option value="970422">970422 - MB Bank</option>
+                    <option value="970432">970432 - VPBank</option>
+                    <option value="970416">970416 - ACB</option>
+                    <option value="970415">970415 - VietinBank</option>
+                    <option value="970409">970409 - Sacombank</option>
+                    <option value="970428">970428 - HDBank</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Số tài khoản</label>
+                  <input
+                    type="text"
+                    value={vietQRConfig.accountNo}
+                    onChange={(e) => setVietQRConfig({ ...vietQRConfig, accountNo: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0123456789"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Nhập số tài khoản thật để tạo QR code thanh toán</p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên chủ tài khoản</label>
+                  <input
+                    type="text"
+                    value={vietQRConfig.accountName}
+                    onChange={(e) => setVietQRConfig({ ...vietQRConfig, accountName: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="LAU MAM NHA TOI"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Tên hiển thị trên QR code (tối đa 25 ký tự)</p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 mt-6">
+                <button
+                  onClick={async () => {
+                    try {
+                      // Test QR bằng cách mở QR modal
+                      const qrUrl = `https://img.vietqr.io/image/${vietQRConfig.acqId}-${vietQRConfig.accountNo}-compact2.png?amount=100000&addInfo=TEST&accountName=${encodeURIComponent(vietQRConfig.accountName)}`;
+                      const newWindow = window.open('', '_blank');
+                      if (newWindow) {
+                        newWindow.document.write(`
+                          <html>
+                            <head><title>Test QR VietQR</title></head>
+                            <body style="text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+                              <h2>Test QR VietQR</h2>
+                              <p>Số tiền: 100,000 ₫</p>
+                              <img src="${qrUrl}" alt="QR Code" style="width: 256px; height: 256px; border: 2px solid #ccc; border-radius: 8px;" />
+                              <p>Quét mã QR để thanh toán</p>
+                              <p style="font-size: 12px; color: #666;">Ngân hàng: ${vietQRConfig.acqId}</p>
+                              <p style="font-size: 12px; color: #666;">STK: ${vietQRConfig.accountNo}</p>
+                              <p style="font-size: 12px; color: #666;">Tên: ${vietQRConfig.accountName}</p>
+                            </body>
+                          </html>
+                        `);
+                      }
+                    } catch (error) {
+                      alert('Lỗi khi test QR: ' + (error instanceof Error ? error.message : String(error)));
+                    }
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Test QR Code
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      setVietQRConfigLoading(true);
+                      
+                      const response = await api.post('/print/vietqr-config', vietQRConfig);
+                      
+                      if (response.data.success) {
+                        alert('✅ Cấu hình VietQR đã được lưu thành công!');
+                        // Reload để đảm bảo hiển thị đúng
+                        await loadVietQRConfig();
+                      } else {
+                        alert('❌ Lỗi khi lưu cấu hình VietQR: ' + response.data.message);
+                      }
+                    } catch (error) {
+                      console.error('Error saving VietQR config:', error);
+                      alert('❌ Lỗi khi lưu cấu hình VietQR: ' + (error instanceof Error ? error.message : String(error)));
+                    } finally {
+                      setVietQRConfigLoading(false);
+                    }
+                  }}
+                  disabled={vietQRConfigLoading}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  {vietQRConfigLoading ? 'Đang lưu...' : 'Lưu cấu hình'}
                 </button>
               </div>
             </div>

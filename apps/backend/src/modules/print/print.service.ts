@@ -405,13 +405,21 @@ export class PrintService {
   }
 
   /**
-   * Cập nhật cấu hình VietQR
+   * Lấy cấu hình VietQR hiện tại
    */
-  updateVietQRConfig(config: Partial<VietQRConfig>): void {
+  getVietQRConfig(): VietQRConfig {
+    return { ...this.vietQRConfig };
+  }
+
+  /**
+   * Cập nhật cấu hình VietQR (và lưu vào file nếu cần)
+   */
+  async updateVietQRConfig(config: Partial<VietQRConfig>): Promise<void> {
     this.vietQRConfig.acqId = config.acqId ?? this.vietQRConfig.acqId;
     this.vietQRConfig.accountNo = config.accountNo ?? this.vietQRConfig.accountNo;
     this.vietQRConfig.accountName = config.accountName ?? this.vietQRConfig.accountName;
     
+    // TODO: Có thể lưu vào file nếu cần persist
     console.log('✅ Đã cập nhật cấu hình VietQR:', this.vietQRConfig);
   }
 }

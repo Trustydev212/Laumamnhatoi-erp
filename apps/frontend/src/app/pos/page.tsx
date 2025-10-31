@@ -70,6 +70,9 @@ export default function PosPage() {
   const [showTableModal, setShowTableModal] = useState(false);
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [editingTable, setEditingTable] = useState<any>(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrData, setQRData] = useState<{ amount: number; billId: string } | null>(null);
+  const [vietQRConfig, setVietQRConfig] = useState<{ acqId: number; accountNo: string; accountName: string } | null>(null);
   
   // Customer states
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -82,7 +85,26 @@ export default function PosPage() {
 
   useEffect(() => {
     loadData();
+    loadVietQRConfig();
   }, []);
+
+  // Load VietQR config
+  const loadVietQRConfig = async () => {
+    try {
+      const response = await api.get('/print/vietqr-config');
+      if (response.data.success && response.data.vietQRConfig) {
+        setVietQRConfig(response.data.vietQRConfig);
+      }
+    } catch (error) {
+      console.error('Error loading VietQR config:', error);
+      // Use default config
+      setVietQRConfig({
+        acqId: 970436,
+        accountNo: '0123456789',
+        accountName: 'LAU MAM NHA TOI'
+      });
+    }
+  };
 
   // Tính thuế khi billData thay đổi
   useEffect(() => {
@@ -924,16 +946,27 @@ export default function PosPage() {
 
             <div className="mb-4">
               <h3 className="font-semibold mb-2">Chi tiết món ăn:</h3>
-              {billData.orderItems && Array.isArray(billData.orderItems) && billData.orderItems.length > 0 ? (
-                billData.orderItems.map((item: any, index: number) => (
-                  <div key={index} className="flex justify-between text-sm mb-1">
-                    <span>{item.menu?.name} x{item.quantity}</span>
-                    <span>{Number(item.subtotal).toLocaleString('vi-VN')} ₫</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500">Không có món ăn</p>
-              )}
+              {(() => {
+                // Lấy items từ billData (có thể là orderItems hoặc items)
+                const items = billData.orderItems || billData.items || [];
+                
+                if (Array.isArray(items) && items.length > 0) {
+                  return items.map((item: any, index: number) => {
+                    const itemName = item.menu?.name || item.name || 'Món ăn';
+                    const quantity = item.quantity || item.qty || 1;
+                    const itemPrice = item.subtotal || (item.price * (item.quantity || item.qty || 1)) || 0;
+                    
+                    return (
+                      <div key={index} className="flex justify-between text-sm mb-1">
+                        <span>{itemName} x{quantity}</span>
+                        <span>{Number(itemPrice).toLocaleString('vi-VN')} ₫</span>
+                      </div>
+                    );
+                  });
+                } else {
+                  return <p className="text-sm text-gray-500">Không có món ăn</p>;
+                }
+              })()}
             </div>
 
             <div className="border-t pt-2 mb-4">
@@ -986,25 +1019,14 @@ export default function PosPage() {
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 no-print">
               <button
-                onClick={async () => {
-                  try {
-                    // Gọi API in QR VietQR mới
-                    const qrData = {
-                      amount: Number(billData.total) || 0,
-                      billId: billData.id || billData.orderNumber || 'UNKNOWN'
-                    };
-
-                    const response = await api.post('/print/print-qr', qrData);
-                    
-                    if (response.data.success) {
-                      alert('✅ QR thanh toán đã được in thành công!');
-                    } else {
-                      alert('❌ Lỗi khi in QR: ' + response.data.message);
-                    }
-                  } catch (error) {
-                    console.error('❌ Error printing QR:', error);
-                    alert('❌ Lỗi khi in QR: ' + (error instanceof Error ? error.message : String(error)));
-                  }
+                onClick={() => {
+                  // Hiển thị QR modal để in qua browser
+                  const qrDataValue = {
+                    amount: Number(billData.total) || 0,
+                    billId: billData.id || billData.orderNumber || 'UNKNOWN'
+                  };
+                  setQRData(qrDataValue);
+                  setShowQRModal(true);
                 }}
                 className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
               >
@@ -1071,37 +1093,71 @@ export default function PosPage() {
                 🖨️ In qua máy tính
               </button>
               <button
-                onClick={async () => {
-                  try {
-                    // Chuẩn bị dữ liệu QR
-                    const qrData = {
-                      amount: billData.total || 0,
-                      billId: billData.id
-                    };
-
-                    console.log('💳 Dữ liệu QR:', qrData);
-
-                    // Gọi API in QR
-                    const response = await api.post('/print/print-qr', qrData);
-                    
-                    if (response.data.success) {
-                      alert('✅ QR thanh toán đã được in thành công!\n\n💳 QR VietQR động\n📱 Khách có thể quét để chuyển khoản\n🖨️ In riêng biệt');
-                    } else {
-                      alert('❌ Lỗi khi in QR: ' + response.data.message);
-                    }
-                  } catch (error) {
-                    console.error('❌ Error printing QR:', error);
-                    alert('❌ Lỗi khi in QR: ' + (error instanceof Error ? error.message : String(error)));
-                  }
-                }}
-                className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
-              >
-                💳 In QR thanh toán
-              </button>
-              <button
                 onClick={() => {
                   setShowBill(false);
                   setTaxInfo(null); // Reset tax info khi đóng
+                }}
+                className="flex-1 bg-gray-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-600 text-sm sm:text-base"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Payment Modal */}
+      {showQRModal && qrData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 print:fixed print:inset-0 print:bg-white print:p-0 print:m-0 qr-print-content">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full mx-2 sm:mx-4 print:shadow-none print:border-0 print:w-full print:max-w-none print:m-0 print:p-4">
+            <div className="text-center mb-4">
+              <h2 className="text-xl font-bold">QR THANH TOÁN VIETQR</h2>
+              <p className="text-sm text-gray-600">Quét QR để thanh toán</p>
+            </div>
+            
+            <div className="flex flex-col items-center mb-4">
+              {/* QR Code từ VietQR API */}
+              {vietQRConfig ? (
+                <img
+                  src={`https://img.vietqr.io/image/${vietQRConfig.acqId}-${vietQRConfig.accountNo}-compact2.png?amount=${qrData.amount}&addInfo=HD${qrData.billId}&accountName=${encodeURIComponent(vietQRConfig.accountName)}`}
+                  alt="QR Code Thanh toán"
+                  className="w-64 h-64 border-2 border-gray-300 rounded-lg mb-4"
+                  onError={(e) => {
+                    console.error('❌ Lỗi tải QR image');
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="256" height="256"%3E%3Crect width="256" height="256" fill="white"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="black"%3EQR Code%3C/text%3E%3C/svg%3E';
+                  }}
+                />
+              ) : (
+                <div className="w-64 h-64 border-2 border-gray-300 rounded-lg mb-4 flex items-center justify-center">
+                  <p className="text-gray-500">Đang tải QR...</p>
+                </div>
+              )}
+              
+              <div className="text-center mb-4">
+                <p className="text-lg font-semibold mb-2">
+                  Số tiền: {Number(qrData.amount).toLocaleString('vi-VN')} ₫
+                </p>
+                <p className="text-sm text-gray-600">
+                  Mã hóa đơn: {qrData.billId}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 no-print">
+              <button
+                onClick={() => {
+                  // In qua hộp thoại print dialog của browser
+                  window.print();
+                }}
+                className="flex-1 bg-indigo-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-indigo-600 text-sm sm:text-base"
+                title="In qua hộp thoại in của máy tính (PDF hoặc máy in hệ thống)"
+              >
+                🖨️ In qua máy tính
+              </button>
+              <button
+                onClick={() => {
+                  setShowQRModal(false);
+                  setQRData(null);
                 }}
                 className="flex-1 bg-gray-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-600 text-sm sm:text-base"
               >
