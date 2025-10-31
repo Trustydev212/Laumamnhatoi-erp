@@ -25,23 +25,23 @@ export class BusinessIntelligenceService {
     ] = await Promise.all([
       this.prisma.order.aggregate({
         where: { ...where, status: 'COMPLETED' },
-        _sum: { total: true }
+        _sum: { subtotal: true } // Doanh thu = subtotal (trước thuế)
       }),
       this.prisma.order.count({
         where: { ...where, status: 'COMPLETED' }
       }),
       this.prisma.order.aggregate({
         where: { ...where, status: 'COMPLETED' },
-        _avg: { total: true }
+        _avg: { subtotal: true } // Giá trị đơn trung bình = subtotal (trước thuế)
       }),
       this.getRevenueByDay(startDate, endDate),
       this.getTopProducts(startDate, endDate)
     ]);
 
     return {
-      totalRevenue: totalRevenue._sum.total || 0,
+      totalRevenue: Number(totalRevenue._sum.subtotal || 0), // Doanh thu = subtotal (trước thuế)
       totalOrders,
-      averageOrderValue: averageOrderValue._avg.total || 0,
+      averageOrderValue: Number(averageOrderValue._avg.subtotal || 0), // Giá trị đơn trung bình = subtotal
       revenueByDay,
       topProducts
     };
@@ -204,7 +204,7 @@ export class BusinessIntelligenceService {
     const orders = await this.prisma.order.findMany({
       where,
       select: {
-        total: true,
+        subtotal: true, // Doanh thu = subtotal (trước thuế)
         createdAt: true
       }
     });
@@ -212,7 +212,8 @@ export class BusinessIntelligenceService {
     // Group by day
     const revenueByDay = orders.reduce((acc, order) => {
       const date = order.createdAt.toISOString().split('T')[0];
-      acc[date] = (acc[date] || 0) + Number(order.total);
+      // Doanh thu = subtotal (trước thuế)
+      acc[date] = (acc[date] || 0) + Number(order.subtotal);
       return acc;
     }, {} as Record<string, number>);
 

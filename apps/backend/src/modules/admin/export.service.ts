@@ -528,13 +528,13 @@ export class ExportService {
       orderBy: { paidAt: 'desc' }
     });
 
-    // Tính tổng doanh thu theo ngày
+    // Tính tổng doanh thu theo ngày (dùng subtotal - trước thuế)
     const dailyRevenue = orders.reduce((acc: any, order) => {
       const date = order.paidAt?.toISOString().split('T')[0] || order.createdAt.toISOString().split('T')[0];
       if (!acc[date]) {
         acc[date] = { date, revenue: 0, orders: 0 };
       }
-      acc[date].revenue += Number(order.total);
+      acc[date].revenue += Number(order.subtotal);
       acc[date].orders += 1;
       return acc;
     }, {});
@@ -563,7 +563,8 @@ export class ExportService {
       return acc;
     }, {});
 
-    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.total), 0);
+    // Doanh thu = subtotal (trước thuế), không phải total (sau thuế)
+    const totalRevenue = orders.reduce((sum, order) => sum + Number(order.subtotal), 0);
     const totalOrders = orders.length;
 
     const revenueData = {
@@ -598,7 +599,8 @@ export class ExportService {
     ];
 
     const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
+    // Doanh thu = subtotal (trước thuế), không phải total (sau thuế)
+    const totalRevenue = orders.reduce((sum, o) => sum + Number(o.subtotal), 0);
     const totalItems = orders.reduce((sum, o) => sum + o.orderItems.length, 0);
     const paidOrders = orders.filter(o => o.isPaid).length;
 
@@ -640,7 +642,7 @@ export class ExportService {
         status: order.status,
         subtotal: Number(order.subtotal).toLocaleString('vi-VN'),
         tax: Number(order.tax).toLocaleString('vi-VN'),
-        total: Number(order.total).toLocaleString('vi-VN'),
+        total: Number(order.total).toLocaleString('vi-VN'), // Total = subtotal + tax
         isPaid: order.isPaid ? 'Có' : 'Không',
         createdAt: order.createdAt.toLocaleString('vi-VN')
       });
@@ -942,6 +944,204 @@ export class ExportService {
       y += 20;
       doc.text(`Giá trị đơn hàng trung bình: ${summary.averageOrderValue.toLocaleString('vi-VN')} đ`, 50, y);
       
+      doc.end();
+    });
+  }
+
+  /**
+   * Export chi tiết đơn hàng - mã hóa đơn, món, giá, thời gian bán
+   */
+  async exportOrderDetails(format: 'excel' | 'pdf', filters: any = {}) {
+    const startDate = filters.startDate ? new Date(filters.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDate = filters.endDate ? new Date(filters.endDate) : new Date();
+
+    const orders = await this.prisma.order.findMany({
+      where: {
+        ...(filters.status && { status: filters.status }),
+        ...(filters.isPaid !== undefined && { isPaid: filters.isPaid }),
+        createdAt: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      include: {
+        orderItems: {
+          include: {
+            menu: {
+              select: {
+                name: true,
+                price: true
+              }
+            }
+          }
+        },
+        table: {
+          select: {
+            name: true
+          }
+        },
+        user: {
+          select: {
+            username: true,
+            firstName: true,
+            lastName: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Flatten orders to order items with order info
+    const orderDetails = [];
+    orders.forEach(order => {
+      order.orderItems.forEach(item => {
+        orderDetails.push({
+          orderNumber: order.orderNumber,
+          orderId: order.id,
+          orderDate: order.createdAt,
+          paidAt: order.paidAt,
+          tableName: order.table?.name || 'N/A',
+          staff: `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim() || order.user?.username || 'N/A',
+          menuName: item.menu.name,
+          menuPrice: Number(item.menu.price),
+          quantity: item.quantity,
+          itemSubtotal: Number(item.subtotal),
+          itemPrice: Number(item.price), // Price at time of order
+          orderSubtotal: Number(order.subtotal),
+          orderTax: Number(order.tax),
+          orderTotal: Number(order.total),
+          orderStatus: order.status,
+          isPaid: order.isPaid
+        });
+      });
+    });
+
+    if (format === 'excel') {
+      return this.exportOrderDetailsToExcel(orderDetails, startDate, endDate);
+    } else {
+      return this.exportOrderDetailsToPDF(orderDetails, startDate, endDate);
+    }
+  }
+
+  private async exportOrderDetailsToExcel(orderDetails: any[], startDate: Date, endDate: Date) {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Chi tiết đơn hàng');
+
+    worksheet.columns = [
+      { header: 'Mã hóa đơn', key: 'orderNumber', width: 15 },
+      { header: 'Thời gian bán', key: 'orderDate', width: 20 },
+      { header: 'Thời gian thanh toán', key: 'paidAt', width: 20 },
+      { header: 'Bàn', key: 'tableName', width: 15 },
+      { header: 'Nhân viên', key: 'staff', width: 20 },
+      { header: 'Món ăn', key: 'menuName', width: 30 },
+      { header: 'Giá menu', key: 'menuPrice', width: 15 },
+      { header: 'Số lượng', key: 'quantity', width: 12 },
+      { header: 'Giá tại đơn', key: 'itemPrice', width: 15 },
+      { header: 'Thành tiền', key: 'itemSubtotal', width: 15 },
+      { header: 'Trạng thái', key: 'orderStatus', width: 15 },
+      { header: 'Đã thanh toán', key: 'isPaid', width: 12 }
+    ];
+
+    orderDetails.forEach(detail => {
+      worksheet.addRow({
+        orderNumber: detail.orderNumber,
+        orderDate: detail.orderDate.toLocaleString('vi-VN'),
+        paidAt: detail.paidAt ? detail.paidAt.toLocaleString('vi-VN') : '-',
+        tableName: detail.tableName,
+        staff: detail.staff,
+        menuName: detail.menuName,
+        menuPrice: detail.menuPrice.toLocaleString('vi-VN') + ' đ',
+        quantity: detail.quantity,
+        itemPrice: detail.itemPrice.toLocaleString('vi-VN') + ' đ',
+        itemSubtotal: detail.itemSubtotal.toLocaleString('vi-VN') + ' đ',
+        orderStatus: detail.orderStatus,
+        isPaid: detail.isPaid ? 'Có' : 'Không'
+      });
+    });
+
+    // Style headers
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+
+    // Add summary sheet
+    const summarySheet = workbook.addWorksheet('Tổng quan');
+    summarySheet.columns = [
+      { header: 'Chỉ tiêu', key: 'metric', width: 30 },
+      { header: 'Giá trị', key: 'value', width: 25 }
+    ];
+
+    const totalOrders = new Set(orderDetails.map(d => d.orderNumber)).size;
+    const totalItems = orderDetails.length;
+    const totalRevenue = orderDetails.reduce((sum, d) => sum + d.itemSubtotal, 0);
+    const totalQuantity = orderDetails.reduce((sum, d) => sum + d.quantity, 0);
+    const paidOrders = new Set(orderDetails.filter(d => d.isPaid).map(d => d.orderNumber)).size;
+
+    summarySheet.addRow({ metric: 'Khoảng thời gian', value: `${startDate.toLocaleDateString('vi-VN')} - ${endDate.toLocaleDateString('vi-VN')}` });
+    summarySheet.addRow({ metric: 'Tổng số đơn hàng', value: totalOrders });
+    summarySheet.addRow({ metric: 'Tổng số món đã bán', value: totalItems });
+    summarySheet.addRow({ metric: 'Tổng số lượng', value: totalQuantity });
+    summarySheet.addRow({ metric: 'Tổng doanh thu', value: totalRevenue.toLocaleString('vi-VN') + ' đ' });
+    summarySheet.addRow({ metric: 'Đơn đã thanh toán', value: paidOrders });
+
+    summarySheet.getRow(1).font = { bold: true };
+    summarySheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+
+    return workbook.xlsx.writeBuffer();
+  }
+
+  private async exportOrderDetailsToPDF(orderDetails: any[], startDate: Date, endDate: Date) {
+    const doc = new PDFDocument();
+    const buffers: Buffer[] = [];
+    
+    doc.on('data', buffers.push.bind(buffers));
+    
+    return new Promise<Buffer>((resolve) => {
+      doc.on('end', () => {
+        resolve(Buffer.concat(buffers));
+      });
+
+      doc.fontSize(20).text('Chi Tiết Đơn Hàng', 50, 50);
+      doc.fontSize(12).text(`Từ ${startDate.toLocaleDateString('vi-VN')} đến ${endDate.toLocaleDateString('vi-VN')}`, 50, 80);
+      doc.moveDown();
+
+      const totalOrders = new Set(orderDetails.map(d => d.orderNumber)).size;
+      const totalRevenue = orderDetails.reduce((sum, d) => sum + d.itemSubtotal, 0);
+
+      let y = 120;
+      doc.fontSize(14).text('Tổng quan', 50, y);
+      y += 30;
+      doc.fontSize(12).text(`Tổng số đơn hàng: ${totalOrders}`, 50, y);
+      y += 20;
+      doc.text(`Tổng doanh thu: ${totalRevenue.toLocaleString('vi-VN')} đ`, 50, y);
+      y += 40;
+
+      doc.fontSize(14).text('Chi tiết (10 dòng đầu)', 50, y);
+      y += 30;
+
+      orderDetails.slice(0, 10).forEach((detail, idx) => {
+        if (y > 750) {
+          doc.addPage();
+          y = 50;
+        }
+        doc.fontSize(10).text(
+          `${detail.orderNumber} | ${detail.menuName} | ${detail.quantity}x | ${detail.itemSubtotal.toLocaleString('vi-VN')} đ | ${detail.orderDate.toLocaleDateString('vi-VN')}`,
+          50, y
+        );
+        y += 20;
+      });
+
+      if (orderDetails.length > 10) {
+        doc.fontSize(10).text(`... và ${orderDetails.length - 10} dòng khác (xem file Excel để đầy đủ)`, 50, y);
+      }
+
       doc.end();
     });
   }

@@ -9,6 +9,7 @@ import NotificationSystem from '@/components/notification-system';
 import DataExport from '@/components/data-export';
 import AdvancedFilter from '@/components/advanced-filter';
 import AIChatbot from '@/components/ai-chatbot';
+import ExportOrderDetails from '@/components/export-order-details';
 
 interface SystemHealth {
   status: string;
@@ -925,7 +926,7 @@ export default function AdminPage() {
             </div>
             
             {/* Báo cáo Excel */}
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
               <h3 className="text-xl font-semibold mb-4">Xuất Báo Cáo Excel</h3>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <DataExport dataType="sales-report" />
@@ -933,6 +934,9 @@ export default function AdminPage() {
                 <DataExport dataType="revenue-report" />
               </div>
             </div>
+
+            {/* Xuất chi tiết đơn hàng */}
+            <ExportOrderDetails />
             
             {/* Overview Cards */}
             {analyticsData && (

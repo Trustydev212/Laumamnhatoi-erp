@@ -124,7 +124,7 @@ export class ChatbotService {
 - Tổng số khách hàng: ${totalCustomers}
 
 **DOANH THU 30 NGÀY GẦN NHẤT:**
-- Tổng doanh thu: ${Number(revenueLast30Days._sum.total || 0).toLocaleString('vi-VN')} đ
+- Tổng doanh thu: ${Number(revenueLast30Days._sum.subtotal || 0).toLocaleString('vi-VN')} đ (trước thuế)
 - Số đơn đã thanh toán: ${revenueLast30Days._count}
 
 **TỒN KHO:**
@@ -190,7 +190,7 @@ Câu hỏi của người dùng: ${message}
 Hãy phân tích và trả lời dựa trên dữ liệu trên.`;
 
       const completion = await this.openai.chat.completions.create({
-        model: 'gpt-4o-mini', // Using cheaper model for cost efficiency
+        model: 'o1-mini', // Using o1-mini for better reasoning
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage }
@@ -255,9 +255,9 @@ Hãy phân tích và trả lời dựa trên dữ liệu trên.`;
               gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
             }
           },
-          _sum: { total: true },
+          _sum: { subtotal: true }, // Doanh thu = subtotal (trước thuế)
           _count: true
-        }),
+        }) as any,
         this.prisma.ingredient.count({
           where: {
             isActive: true,
@@ -285,7 +285,7 @@ Hãy phân tích và trả lời dựa trên dữ liệu trên.`;
       }
 
       return {
-        revenue: `Doanh thu 30 ngày: ${Number(revenueLast30Days._sum.total || 0).toLocaleString('vi-VN')} đ từ ${revenueLast30Days._count} đơn hàng.`,
+        revenue: `Doanh thu 30 ngày: ${Number(revenueLast30Days._sum.subtotal || 0).toLocaleString('vi-VN')} đ (trước thuế) từ ${revenueLast30Days._count} đơn hàng.`,
         inventory: `${lowStockCount} nguyên liệu cần bổ sung.`,
         topItems: `Top 3 món bán chạy: ${topItemsData.map((item, idx) => `${idx + 1}. ${menuMap.get(item.menuId) || 'Unknown'}`).join(', ')}.`,
         alerts

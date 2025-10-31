@@ -197,4 +197,35 @@ export class ExportController {
       res.status(500).json({ message: 'Export failed' });
     }
   }
+
+  @Post('order-details')
+  @ApiOperation({ summary: 'Export chi tiết đơn hàng - mã hóa đơn, món, giá, thời gian bán' })
+  @ApiResponse({ status: 200, description: 'Order details exported successfully' })
+  async exportOrderDetails(
+    @Body() body: { format: 'excel' | 'pdf'; filters?: any },
+    @Res() res: Response
+  ) {
+    try {
+      const buffer = await this.exportService.exportOrderDetails(body.format, body.filters);
+      
+      const contentType = body.format === 'excel' 
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        : 'application/pdf';
+      
+      const filename = `order_details_${new Date().toISOString().split('T')[0]}.${
+        body.format === 'excel' ? 'xlsx' : 'pdf'
+      }`;
+
+      res.set({
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': Buffer.byteLength(buffer).toString()
+      });
+
+      res.send(buffer);
+    } catch (error) {
+      console.error('Export order details error:', error);
+      res.status(500).json({ message: 'Export failed' });
+    }
+  }
 }
