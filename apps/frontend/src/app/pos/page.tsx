@@ -177,11 +177,12 @@ export default function PosPage() {
         if (activeOrders.length > 0) {
           setCurrentOrder(activeOrders[0]); // Get the latest active order
           // Convert order items to cart format
-          const cartItems = activeOrders[0].orderItems.map((item: any) => ({
+          const orderItems = activeOrders[0]?.orderItems || [];
+          const cartItems = Array.isArray(orderItems) ? orderItems.map((item: any) => ({
             menuId: item.menuId,
             quantity: item.quantity,
             notes: item.notes
-          }));
+          })) : [];
           setCart(cartItems);
         } else {
           setCurrentOrder(null);
@@ -258,17 +259,19 @@ export default function PosPage() {
       const response = await api.post('/pos/orders', orderData);
       const orderId = response.data.id;
       
-      // Tính thuế cho order vừa tạo
+      // Tính thuế cho order vừa tạo (không bắt buộc)
       try {
-        await api.post('/printer/enhanced/calculate-tax', {
-          subtotal: cart.reduce((total, item) => {
-            const menuItem = menu.find(m => m.id === item.menuId);
-            return total + (menuItem ? Number(menuItem.price) * item.quantity : 0);
-          }, 0),
-          orderId: orderId
+        const subtotal = cart.reduce((total, item) => {
+          const menuItem = menu.find(m => m.id === item.menuId);
+          return total + (menuItem ? Number(menuItem.price) * item.quantity : 0);
+        }, 0);
+        
+        await api.post('/print/calculate-tax', {
+          subtotal: subtotal
         });
       } catch (taxError) {
         console.warn('Could not calculate tax for order:', taxError);
+        // Không bắt buộc, chỉ để tính toán trước
       }
       
       alert('Đơn hàng đã được tạo thành công!');
@@ -941,12 +944,16 @@ export default function PosPage() {
 
             <div className="mb-4">
               <h3 className="font-semibold mb-2">Chi tiết món ăn:</h3>
-              {billData.orderItems?.map((item: any, index: number) => (
-                <div key={index} className="flex justify-between text-sm mb-1">
-                  <span>{item.menu?.name} x{item.quantity}</span>
-                  <span>{Number(item.subtotal).toLocaleString('vi-VN')} ₫</span>
-                </div>
-              ))}
+              {billData.orderItems && Array.isArray(billData.orderItems) && billData.orderItems.length > 0 ? (
+                billData.orderItems.map((item: any, index: number) => (
+                  <div key={index} className="flex justify-between text-sm mb-1">
+                    <span>{item.menu?.name} x{item.quantity}</span>
+                    <span>{Number(item.subtotal).toLocaleString('vi-VN')} ₫</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">Không có món ăn</p>
+              )}
             </div>
 
             <div className="border-t pt-2 mb-4">
@@ -1001,70 +1008,36 @@ export default function PosPage() {
               <button
                 onClick={async () => {
                   try {
-                    // Tạo QR code ngân hàng
-                    const response = await fetch('/api/printer/enhanced/bank-qr', {
+                    // Gọi API in QR VietQR mới
+                    const qrData = {
+                      amount: Number(billData.total) || 0,
+                      billId: billData.id || billData.orderNumber || 'UNKNOWN'
+                    };
+
+                    const response = await fetch('/api/print/print-qr', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ 
-                        amount: Number(billData.total),
-                        description: `Thanh toan hoa don ${billData.orderNumber}`
-                      })
-                    });
-                    
-                    if (response.ok) {
-                      const qrSvg = await response.text();
-                      const newWindow = window.open('', '_blank');
-                      if (newWindow) {
-                        newWindow.document.write(`
-                          <html>
-                            <head><title>QR Code Thanh Toán</title></head>
-                            <body style="text-align: center; padding: 20px; font-family: Arial, sans-serif;">
-                              <h2>QR Code Thanh Toán</h2>
-                              <p>Số tiền: ${Number(billData.total).toLocaleString('vi-VN')} ₫</p>
-                              <p>Hóa đơn: ${billData.orderNumber}</p>
-                              ${qrSvg}
-                              <p>Quét mã QR để thanh toán</p>
-                            </body>
-                          </html>
-                        `);
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Error generating bank QR:', error);
-                    alert('Lỗi khi tạo QR code thanh toán');
-                  }
-                }}
-                className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
-              >
-                QR Thanh toán
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    // In hóa đơn với ESC/POS và QR code thật
-                    const response = await fetch(`/api/printer/escpos/print/${billData.id}`, {
-                      method: 'GET'
+                      body: JSON.stringify(qrData)
                     });
                     
                     if (response.ok) {
                       const result = await response.json();
-                      
                       if (result.success) {
-                        alert('Hóa đơn đã được gửi tới máy in Xprinter T80L với QR code thật!');
+                        alert('✅ QR thanh toán đã được in thành công!');
                       } else {
-                        alert('Lỗi khi in hóa đơn: ' + result.message);
+                        alert('❌ Lỗi khi in QR: ' + result.message);
                       }
                     } else {
-                      alert('Lỗi khi in hóa đơn. Vui lòng thử lại.');
+                      alert('❌ Lỗi khi gọi API in QR');
                     }
                   } catch (error) {
-                    console.error('Error printing ESC/POS receipt:', error);
-                    alert('Lỗi khi in hóa đơn: ' + (error instanceof Error ? error.message : String(error)));
+                    console.error('❌ Error printing QR:', error);
+                    alert('❌ Lỗi khi in QR: ' + (error instanceof Error ? error.message : String(error)));
                   }
                 }}
-                className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
+                className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
               >
-                In hóa đơn Xprinter (ESC/POS + QR)
+                💳 In QR thanh toán
               </button>
               <button
                 onClick={async () => {
