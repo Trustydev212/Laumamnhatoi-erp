@@ -529,6 +529,127 @@ export class PrintService {
   }
 
   /**
+   * Render QR thanh toán thành HTML để in qua browser
+   * Format giống ESC/POS nhưng dùng HTML/CSS
+   */
+  async renderQRToHTML(data: { qrUrl: string; amount: number; billId: string; accountName?: string }): Promise<string> {
+    try {
+      const { qrUrl, amount, billId, accountName } = data;
+
+      // Tải QR image từ VietQR API
+      let qrImageBase64: string = '';
+      try {
+        const res = await axios.get(qrUrl, { responseType: 'arraybuffer', timeout: 10000 });
+        const qrBuffer = Buffer.from(res.data, 'binary');
+        // Convert to base64 để embed vào HTML
+        qrImageBase64 = `data:image/png;base64,${qrBuffer.toString('base64')}`;
+        console.log('✅ Đã tải QR image cho HTML render, kích thước:', qrBuffer.length, 'bytes');
+      } catch (axiosError: any) {
+        console.error('❌ Lỗi tải QR image:', axiosError);
+        // Fallback: dùng URL trực tiếp
+        qrImageBase64 = qrUrl;
+      }
+
+      // Render HTML với style giống ESC/POS (80mm width)
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>QR Thanh toán ${billId}</title>
+  <style>
+    @media print {
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+      body {
+        margin: 0;
+        padding: 10px;
+        width: 80mm;
+      }
+    }
+    body {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      width: 80mm;
+      margin: 0 auto;
+      padding: 10px;
+      line-height: 1.4;
+    }
+    .header {
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    .qr-container {
+      text-align: center;
+      margin: 15px 0;
+    }
+    .qr-image {
+      width: 256px;
+      height: 256px;
+      max-width: 100%;
+      border: 2px solid #000;
+      border-radius: 4px;
+    }
+    .info {
+      text-align: center;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    .amount {
+      font-weight: bold;
+      font-size: 16px;
+      margin: 10px 0;
+    }
+    .bill-id {
+      font-size: 11px;
+      color: #666;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 11px;
+    }
+    .divider {
+      border-top: 1px dashed #000;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">QR THANH TOÁN VIETQR</div>
+  <div class="divider"></div>
+  
+  <div class="qr-container">
+    <img src="${qrImageBase64}" alt="QR Code" class="qr-image" />
+  </div>
+  
+  <div class="info">
+    <div class="amount">Số tiền: ${Number(amount).toLocaleString('vi-VN')} ₫</div>
+    <div class="bill-id">Mã hóa đơn: ${billId}</div>
+    ${accountName ? `<div style="font-size: 10px; margin-top: 5px;">${accountName}</div>` : ''}
+  </div>
+  
+  <div class="divider"></div>
+  <div class="footer">
+    <div style="font-weight: bold; margin-bottom: 5px;">Quét QR để thanh toán</div>
+    <div style="font-size: 10px;">699 Phạm Hữu Lầu, Cao Lãnh, Đồng Tháp</div>
+  </div>
+</body>
+</html>
+      `;
+
+      return html;
+    } catch (error: any) {
+      console.error('❌ Lỗi render QR to HTML:', error);
+      return `<html><body><p>Lỗi render QR: ${error.message}</p></body></html>`;
+    }
+  }
+
+  /**
    * Render hóa đơn thành HTML để in qua browser
    * Format giống ESC/POS nhưng dùng HTML/CSS
    */

@@ -1229,12 +1229,53 @@ export default function PosPage() {
                 🖨️ In qua máy Xprinter
               </button>
               <button
-                onClick={() => {
-                  // In qua hộp thoại print dialog của browser
-                  window.print();
+                onClick={async () => {
+                  try {
+                    if (!vietQRConfig || !qrData) {
+                      alert('❌ Thiếu thông tin cấu hình QR');
+                      return;
+                    }
+
+                    // Tạo QR URL từ config
+                    const qrUrl = `https://img.vietqr.io/image/${vietQRConfig.acqId}-${vietQRConfig.accountNo}-compact2.png?amount=${qrData.amount}&addInfo=HD${qrData.billId}&accountName=${encodeURIComponent(vietQRConfig.accountName)}`;
+                    
+                    console.log('📋 Gọi backend render QR HTML:', { qrUrl, amount: qrData.amount, billId: qrData.billId });
+
+                    // Gọi backend để render HTML
+                    const response = await api.post('/print/render-qr-html', {
+                      qrUrl,
+                      amount: qrData.amount,
+                      billId: qrData.billId,
+                      accountName: vietQRConfig.accountName
+                    }, {
+                      responseType: 'text' // Nhận HTML text thay vì JSON
+                    });
+
+                    // response.data sẽ là HTML string khi responseType: 'text'
+                    const htmlContent = typeof response.data === 'string' 
+                      ? response.data 
+                      : response.data?.data || String(response.data);
+
+                    // Mở cửa sổ mới với HTML và in
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow) {
+                      printWindow.document.write(htmlContent);
+                      printWindow.document.close();
+                      
+                      // Đợi một chút để content load, rồi mở print dialog
+                      setTimeout(() => {
+                        printWindow.print();
+                      }, 250);
+                    } else {
+                      alert('❌ Không thể mở cửa sổ in. Vui lòng kiểm tra popup blocker.');
+                    }
+                  } catch (error) {
+                    console.error('❌ Error rendering QR HTML:', error);
+                    alert('❌ Lỗi khi render QR: ' + (error instanceof Error ? error.message : String(error)));
+                  }
                 }}
                 className="flex-1 bg-indigo-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-indigo-600 text-sm sm:text-base"
-                title="In qua hộp thoại in của máy tính (PDF hoặc máy in hệ thống)"
+                title="Backend render QR HTML → Hiển thị → In qua browser print dialog"
               >
                 🖨️ In qua máy tính
               </button>

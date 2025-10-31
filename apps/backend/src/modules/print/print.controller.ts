@@ -28,6 +28,46 @@ export class PrintController {
   ) {}
 
   /**
+   * Render QR thanh toán thành HTML để in qua browser
+   * POST /api/print/render-qr-html
+   */
+  @Post('render-qr-html')
+  async renderQRHTML(@Body() body: { qrUrl: string; amount: number; billId: string; accountName?: string }, @Res() res: Response) {
+    try {
+      console.log('💳 Nhận request render QR HTML:', body);
+
+      // Validate dữ liệu đầu vào
+      if (!body.qrUrl || !body.amount || !body.billId) {
+        return res.status(400).send(`
+          <html>
+            <body>
+              <p>Thiếu thông tin bắt buộc: qrUrl, amount hoặc billId</p>
+            </body>
+          </html>
+        `);
+      }
+
+      // Render HTML
+      const html = await this.printService.renderQRToHTML(body);
+
+      // Trả về HTML
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.status(200).send(html);
+
+    } catch (error) {
+      console.error('❌ Lỗi trong renderQRHTML:', error);
+      
+      res.status(500).send(`
+        <html>
+          <body>
+            <p>Lỗi server khi render QR: ${error instanceof Error ? error.message : String(error)}</p>
+          </body>
+        </html>
+      `);
+    }
+  }
+
+  /**
    * Render hóa đơn thành HTML để in qua browser
    * POST /api/print/render-bill-html
    */
