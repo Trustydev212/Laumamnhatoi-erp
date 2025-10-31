@@ -259,20 +259,7 @@ export default function PosPage() {
       const response = await api.post('/pos/orders', orderData);
       const orderId = response.data.id;
       
-      // Tính thuế cho order vừa tạo (không bắt buộc)
-      try {
-        const subtotal = cart.reduce((total, item) => {
-          const menuItem = menu.find(m => m.id === item.menuId);
-          return total + (menuItem ? Number(menuItem.price) * item.quantity : 0);
-        }, 0);
-        
-        await api.post('/print/calculate-tax', {
-          subtotal: subtotal
-        });
-      } catch (taxError) {
-        console.warn('Could not calculate tax for order:', taxError);
-        // Không bắt buộc, chỉ để tính toán trước
-      }
+      // Tính thuế sẽ được tính khi in hóa đơn, không cần tính trước
       
       alert('Đơn hàng đã được tạo thành công!');
 
@@ -1045,20 +1032,23 @@ export default function PosPage() {
                     // Chuẩn bị dữ liệu hóa đơn
                     // Backend sẽ tự tính thuế từ cấu hình admin
                     
-                    // Validate billData.items
-                    if (!billData.items || !Array.isArray(billData.items) || billData.items.length === 0) {
+                    // Lấy items từ billData (có thể là items hoặc orderItems)
+                    const orderItems = billData.items || billData.orderItems || [];
+                    
+                    // Validate items
+                    if (!Array.isArray(orderItems) || orderItems.length === 0) {
                       alert('❌ Không có món ăn nào trong hóa đơn. Vui lòng kiểm tra lại!');
                       return;
                     }
                     
                     const printBillData = {
-                      id: billData.id,
-                      table: selectedTable?.name || 'Tại quầy',
+                      id: billData.id || billData.orderNumber || 'UNKNOWN',
+                      table: selectedTable?.name || billData.table?.name || 'Tại quầy',
                       time: new Date().toLocaleTimeString('vi-VN'),
-                      items: billData.items.map((item: any) => ({
+                      items: orderItems.map((item: any) => ({
                         name: item.menu?.name || item.name || 'Món ăn',
-                        qty: item.quantity || 1,
-                        price: item.price || 0
+                        qty: item.quantity || item.qty || 1,
+                        price: item.price || item.subtotal || 0
                       }))
                       // Backend sẽ tự tính subtotal, thuế, và total từ items
                     };
