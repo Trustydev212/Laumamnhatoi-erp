@@ -59,7 +59,11 @@ git reset --hard origin/main
 
 # Force checkout specific files that might have conflicts
 print_status "🔄 Ensuring clean file state..."
+# Remove and re-checkout printer module to ensure clean state
+rm -rf apps/backend/src/modules/printer
+git checkout HEAD -- apps/backend/src/modules/printer
 git checkout HEAD -- apps/backend/src/app.module.ts
+# Double-check printer module files
 git checkout HEAD -- apps/backend/src/modules/printer/printer.module.ts
 git checkout HEAD -- apps/backend/src/modules/printer/printer.controller.ts
 git checkout HEAD -- apps/backend/src/modules/printer/printer.service.ts
