@@ -31,10 +31,16 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if running as deploy user
-if [ "$USER" != "deploy" ]; then
-    print_error "This script must be run as 'deploy' user"
-    exit 1
+# Check if running as deploy user (allow root as fallback)
+if [ "$USER" != "deploy" ] && [ "$USER" != "root" ]; then
+    print_warning "⚠️  Warning: Running as '$USER' instead of 'deploy'"
+    print_warning "⚠️  For production, it's recommended to use 'deploy' user"
+    read -p "Continue anyway? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_error "Deployment cancelled"
+        exit 1
+    fi
 fi
 
 # Navigate to project directory
