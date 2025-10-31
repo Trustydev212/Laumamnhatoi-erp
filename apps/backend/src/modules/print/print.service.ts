@@ -131,22 +131,31 @@ export class PrintService {
           }
 
           try {
+            // ==== HEADER ====
             printer
-              // HEADER
-              .align('ct').style('b').size(1, 1).text('NHÀ TÔI RESTAURANT')
-              .size(0, 0).text('HÓA ĐƠN THANH TOÁN')
+              .align('ct')
+              .style('b')
+              .size(1, 1)
+              .text('LẨU MẮM NHÀ TÔI')
+              .size(0, 0)
+              .text('HÓA ĐƠN THANH TOÁN')
               .text('Cảm ơn quý khách!')
-              .text('--------------------------------')
-              
-              // INFO
+              .text('--------------------------------');
+
+            // ==== INFO ====
+            printer
               .align('lt')
+              .style('normal')
               .text(`Số đơn: ${bill.id}`)
               .text(`Bàn: ${bill.table || 'Tại quầy'}`)
               .text(`Thời gian: ${bill.time}`)
-              .text('--------------------------------')
-              
-              // ITEMS
-              .style('b').text('STT  Món ăn                SL   Giá').style('normal');
+              .text('--------------------------------');
+
+            // ==== ITEMS ====
+            printer
+              .style('b')
+              .text('STT  Món ăn                 SL    Thành tiền')
+              .style('normal');
 
             bill.items.forEach((item: any, i: number) => {
               // Convert price và qty sang number để tính toán
@@ -157,47 +166,42 @@ export class PrintService {
                 ? parseInt(item.qty, 10) || 0
                 : Number(item.qty) || 0;
               const itemTotal = price * qty;
-              const itemName = item.name || 'Món ăn';
-              printer.text(
-                `${(i + 1).toString().padEnd(3)} ${itemName.padEnd(18)} ${qty.toString().padEnd(3)} ${itemTotal.toLocaleString().padStart(8)}`
-              );
+              const name = (item.name || 'Món ăn').substring(0, 20).padEnd(20, ' ');
+              const qtyStr = qty.toString().padStart(2, ' ');
+              const totalStr = itemTotal.toLocaleString('vi-VN').padStart(10, ' ');
+              printer.text(`${(i + 1).toString().padEnd(3)} ${name}${qtyStr.padStart(5)} ${totalStr}`);
             });
 
             printer.text('--------------------------------');
 
-            // Tạm tính
+            // ==== TỔNG TIỀN ====
             printer
               .align('rt')
               .style('normal')
-              .text(`Tạm tính: ${subtotal.toLocaleString()} đ`);
+              .text(`Tạm tính: ${subtotal.toLocaleString('vi-VN')} đ`);
 
-            // Thuế VAT
             if (taxCalculation.vatEnabled && taxCalculation.vatAmount > 0) {
-              printer
-                .align('rt')
-                .text(`${taxConfig.taxName || 'VAT'} (${taxCalculation.vatRate}%): ${taxCalculation.vatAmount.toLocaleString()} đ`);
+              printer.text(`VAT (${taxCalculation.vatRate}%): ${taxCalculation.vatAmount.toLocaleString('vi-VN')} đ`);
             }
-
-            // Phí phục vụ
             if (taxCalculation.serviceChargeEnabled && taxCalculation.serviceChargeAmount > 0) {
-              printer
-                .align('rt')
-                .text(`${taxConfig.serviceChargeName || 'Phí phục vụ'} (${taxCalculation.serviceChargeRate}%): ${taxCalculation.serviceChargeAmount.toLocaleString()} đ`);
+              printer.text(`Phí phục vụ: ${taxCalculation.serviceChargeAmount.toLocaleString('vi-VN')} đ`);
             }
 
-            // Tổng cộng
+            printer.text('--------------------------------');
             printer
-              .align('rt')
               .style('b')
-              .text(`Tổng cộng: ${taxCalculation.total.toLocaleString()} đ`)
-              .style('normal')
-              .feed(1)
-              
-              // FOOTER
+              .text(`TỔNG CỘNG: ${taxCalculation.total.toLocaleString('vi-VN')} đ`)
+              .feed(1);
+
+            // ==== FOOTER ====
+            printer
               .align('ct')
+              .style('normal')
+              .text('LẨU MẮM NHÀ TÔI')
               .text('699 Phạm Hữu Lầu, Cao Lãnh, Đồng Tháp')
-              .text('Wifi: nhatoi2025')
-              .text('Hẹn gặp lại quý khách!')
+              .feed(1)
+              .style('b')
+              .text('CẢM ƠN QUÝ KHÁCH!')
               .feed(2)
               .cut()
               .close();
@@ -639,6 +643,7 @@ export class PrintService {
   <div class="divider"></div>
   <div class="footer">
     <div style="font-weight: bold; margin-bottom: 8px; font-size: 15px;">Quét QR để thanh toán</div>
+    <div style="font-size: 12px;">LẨU MẮM NHÀ TÔI</div>
     <div style="font-size: 12px;">699 Phạm Hữu Lầu, Cao Lãnh, Đồng Tháp</div>
   </div>
 </body>
@@ -769,7 +774,7 @@ export class PrintService {
   </style>
 </head>
 <body>
-  <div class="header">NHÀ TÔI RESTAURANT</div>
+  <div class="header">LẨU MẮM NHÀ TÔI</div>
   <div class="subheader">HÓA ĐƠN THANH TOÁN</div>
   <div style="text-align: center; font-size: 14px; margin-bottom: 10px;">Cảm ơn quý khách!</div>
   <div class="divider"></div>
@@ -782,7 +787,7 @@ export class PrintService {
   <div class="items">
     <div class="item-row" style="font-weight: bold; margin-bottom: 8px; font-size: 14px; border-bottom: 1px solid #000; padding-bottom: 5px;">
       <span class="item-name">STT  Món ăn</span>
-      <span class="item-price">SL   Giá</span>
+      <span class="item-price">SL    Thành tiền</span>
     </div>
     ${bill.items.map((item: any, i: number) => {
       const price = typeof item.price === 'string' 
@@ -792,11 +797,13 @@ export class PrintService {
         ? parseInt(item.qty, 10) || 0
         : Number(item.qty) || 0;
       const itemTotal = price * qty;
-      const itemName = item.name || 'Món ăn';
+      const name = (item.name || 'Món ăn').substring(0, 20).padEnd(20, ' ');
+      const qtyStr = qty.toString().padStart(2, ' ');
+      const totalStr = itemTotal.toLocaleString('vi-VN').padStart(10, ' ');
       return `
         <div class="item-row">
-          <span class="item-name">${(i + 1).toString().padEnd(3)} ${itemName}</span>
-          <span class="item-price">${qty.toString().padEnd(3)} ${itemTotal.toLocaleString('vi-VN').padStart(10)}</span>
+          <span class="item-name" style="font-family: 'Courier New', monospace; white-space: pre;">${(i + 1).toString().padEnd(3)} ${name}</span>
+          <span class="item-price" style="font-family: 'Courier New', monospace; white-space: pre;">${qtyStr.padStart(5)} ${totalStr}</span>
         </div>
       `;
     }).join('')}
@@ -810,26 +817,26 @@ export class PrintService {
     </div>
     ${bill.vatAmount > 0 ? `
     <div class="summary-row">
-      <span>${bill.taxName || 'VAT'} (${bill.vatRate || 0}%):</span>
+      <span>VAT (${bill.vatRate || 0}%):</span>
       <span style="font-weight: 500;">${vatAmount.toLocaleString('vi-VN')} đ</span>
     </div>
     ` : ''}
     ${bill.serviceChargeAmount > 0 ? `
     <div class="summary-row">
-      <span>${bill.serviceChargeName || 'Phí phục vụ'} (${bill.serviceChargeRate || 0}%):</span>
+      <span>Phí phục vụ:</span>
       <span style="font-weight: 500;">${serviceChargeAmount.toLocaleString('vi-VN')} đ</span>
     </div>
     ` : ''}
     <div class="summary-row total-row">
-      <span>Tổng cộng:</span>
+      <span>TỔNG CỘNG:</span>
       <span>${total.toLocaleString('vi-VN')} đ</span>
     </div>
   </div>
   
   <div class="footer">
+    <div style="margin-bottom: 6px;">LẨU MẮM NHÀ TÔI</div>
     <div style="margin-bottom: 6px;">699 Phạm Hữu Lầu, Cao Lãnh, Đồng Tháp</div>
-    <div style="margin-bottom: 6px;">Wifi: nhatoi2025</div>
-    <div style="margin-top: 12px; font-weight: bold;">Hẹn gặp lại quý khách!</div>
+    <div style="margin-top: 12px; font-weight: bold;">CẢM ƠN QUÝ KHÁCH!</div>
   </div>
 </body>
 </html>
