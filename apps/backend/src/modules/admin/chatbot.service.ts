@@ -1,18 +1,34 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import OpenAI from 'openai';
 
 @Injectable()
 export class ChatbotService {
-  private openai: OpenAI;
+  private openai: OpenAI | null = null;
+  private apiKeyConfigured: boolean = false;
   
-  constructor(private prisma: PrismaService) {
-    // Initialize OpenAI client
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      console.warn('⚠️  OPENAI_API_KEY not found in environment variables. Chatbot will not work.');
+  constructor(
+    private prisma: PrismaService,
+    private configService: ConfigService
+  ) {
+    // Initialize OpenAI client - Try ConfigService first, fallback to process.env
+    const apiKey = this.configService.get<string>('OPENAI_API_KEY') || process.env.OPENAI_API_KEY;
+    
+    if (!apiKey || apiKey.trim() === '') {
+      console.warn('⚠️  OPENAI_API_KEY not found in environment variables.');
+      console.warn('⚠️  Please add OPENAI_API_KEY to your .env file or environment variables.');
+      console.warn('⚠️  Chatbot functionality will be disabled until API key is configured.');
+      this.apiKeyConfigured = false;
     } else {
-      this.openai = new OpenAI({ apiKey });
+      try {
+        this.openai = new OpenAI({ apiKey: apiKey.trim() });
+        this.apiKeyConfigured = true;
+        console.log('✅ OpenAI client initialized successfully');
+      } catch (error) {
+        console.error('❌ Failed to initialize OpenAI client:', error);
+        this.apiKeyConfigured = false;
+      }
     }
   }
 
@@ -152,8 +168,8 @@ ${recentOrders.slice(0, 5).map((order, idx) =>
    * Chat with AI using business context
    */
   async chat(message: string, userId: string): Promise<string> {
-    if (!this.openai) {
-      return 'Chatbot chưa được cấu hình. Vui lòng thêm OPENAI_API_KEY vào biến môi trường.';
+    if (!this.apiKeyConfigured || !this.openai) {
+      return '⚠️ Chatbot chưa được cấu hình.\n\nVui lòng:\n1. Thêm OPENAI_API_KEY vào file .env của backend\n2. Hoặc set biến môi trường OPENAI_API_KEY\n3. Restart backend service để áp dụng thay đổi\n\nVí dụ trong .env:\nOPENAI_API_KEY=sk-your-api-key-here';
     }
 
     try {
