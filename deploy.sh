@@ -74,6 +74,14 @@ rm -f apps/backend/src/services/escpos-printer.service.ts
 rm -f apps/backend/src/services/html-receipt.service.ts
 rm -f apps/backend/src/services/xprinter-receipt.service.ts
 
+# Remove orphaned controller and module files
+rm -f apps/backend/src/modules/printer/enhanced-printer.controller.ts
+rm -f apps/backend/src/modules/printer/escpos-printer.controller.ts
+rm -f apps/backend/src/modules/printer/html-receipt.controller.ts
+rm -f apps/backend/src/modules/printer/vietqr-printer.controller.ts
+rm -f apps/backend/src/modules/printer/xprinter-receipt.controller.ts
+rm -f apps/backend/src/modules/printer/vietqr-printer.module.ts
+
 # Build backend
 print_status "🔨 Building backend..."
 cd apps/backend
