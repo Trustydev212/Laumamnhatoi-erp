@@ -25,7 +25,7 @@ export class ChatbotService {
       totalOrders,
       totalCustomers,
       recentOrders,
-      revenueLast30Days,
+      revenueAggregate,
       inventorySummary,
       topItems
     ] = await Promise.all([
@@ -124,8 +124,8 @@ export class ChatbotService {
 - Tổng số khách hàng: ${totalCustomers}
 
 **DOANH THU 30 NGÀY GẦN NHẤT:**
-- Tổng doanh thu: ${Number(revenueLast30Days._sum.subtotal || 0).toLocaleString('vi-VN')} đ (trước thuế)
-- Số đơn đã thanh toán: ${revenueLast30Days._count}
+- Tổng doanh thu: ${Number(revenueAggregate._sum.subtotal || 0).toLocaleString('vi-VN')} đ (trước thuế)
+- Số đơn đã thanh toán: ${revenueAggregate._count}
 
 **TỒN KHO:**
 - Tổng số nguyên liệu: ${inventorySummary.length}
@@ -257,7 +257,7 @@ Hãy phân tích và trả lời dựa trên dữ liệu trên.`;
           },
           _sum: { subtotal: true }, // Doanh thu = subtotal (trước thuế)
           _count: true
-        }) as any,
+        }),
         this.prisma.ingredient.count({
           where: {
             isActive: true,
