@@ -50,6 +50,10 @@ print_status "📁 Working directory: $(pwd)"
 print_status "📥 Pulling latest code from GitHub..."
 git pull origin main
 
+# Install/update dependencies
+print_status "📦 Installing dependencies..."
+npm install
+
 # Clean old builds
 print_status "🧹 Cleaning old builds..."
 rm -rf apps/backend/dist
@@ -58,6 +62,8 @@ rm -rf apps/frontend/.next
 # Build backend
 print_status "🔨 Building backend..."
 cd apps/backend
+# Ensure dependencies are installed
+npm install
 npm run build
 
 if [ ! -f "dist/src/main.js" ]; then
