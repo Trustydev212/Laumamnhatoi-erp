@@ -7,6 +7,8 @@ import { BusinessIntelligenceController } from './business-intelligence.controll
 import { BusinessIntelligenceService } from './business-intelligence.service';
 import { ExportController } from './export.controller';
 import { ExportService } from './export.service';
+import { ChatbotController } from './chatbot.controller';
+import { ChatbotService } from './chatbot.service';
 import { PrismaModule } from '../../common/prisma/prisma.module';
 import { RealtimeModule } from '../../common/realtime/realtime.module';
 
@@ -16,13 +18,15 @@ import { RealtimeModule } from '../../common/realtime/realtime.module';
     AdminController,
     UserManagementController,
     BusinessIntelligenceController,
-    ExportController
+    ExportController,
+    ChatbotController
   ],
   providers: [
     AdminService,
     UserManagementService,
     BusinessIntelligenceService,
-    ExportService
+    ExportService,
+    ChatbotService
   ],
   exports: [
     AdminService,
