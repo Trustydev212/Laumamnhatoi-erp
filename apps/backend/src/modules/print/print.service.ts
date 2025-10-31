@@ -574,7 +574,7 @@ export class PrintService {
       }
     }
     body {
-      font-family: 'Courier New', monospace;
+      font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
       font-size: 14px;
       width: 80mm;
       margin: 0 auto;
@@ -586,7 +586,7 @@ export class PrintService {
       font-weight: bold;
       font-size: 20px;
       margin-bottom: 12px;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
     .qr-container {
       text-align: center;
@@ -699,7 +699,7 @@ export class PrintService {
       }
     }
     body {
-      font-family: 'Courier New', monospace;
+      font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
       font-size: 14px;
       width: 80mm;
       margin: 0 auto;
@@ -711,7 +711,7 @@ export class PrintService {
       font-weight: bold;
       font-size: 20px;
       margin-bottom: 12px;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
     .subheader {
       text-align: center;
