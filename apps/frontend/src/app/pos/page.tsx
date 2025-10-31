@@ -89,23 +89,17 @@ export default function PosPage() {
     const calculateTax = async () => {
       if (billData && billData.subtotal && showBill) {
         try {
-          const response = await fetch('/api/print/calculate-tax', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ subtotal: Number(billData.subtotal) })
+          const response = await api.post('/print/calculate-tax', {
+            subtotal: Number(billData.subtotal)
           });
 
-          if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-              setTaxInfo(result.taxCalculation);
-              // Cập nhật billData với thông tin thuế mới
-              setBillData((prev: any) => ({
-                ...prev,
-                tax: result.taxCalculation.vatAmount,
-                serviceCharge: result.taxCalculation.serviceChargeAmount,
+          if (response.data.success) {
+            setTaxInfo(response.data.taxCalculation);
+            // Cập nhật billData với thông tin thuế mới
+            setBillData((prev: any) => ({
+              ...prev,
+              tax: response.data.taxCalculation.vatAmount,
+              serviceCharge: response.data.taxCalculation.serviceChargeAmount,
                 total: result.taxCalculation.total
               }));
             }
@@ -1001,21 +995,12 @@ export default function PosPage() {
                       billId: billData.id || billData.orderNumber || 'UNKNOWN'
                     };
 
-                    const response = await fetch('/api/print/print-qr', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(qrData)
-                    });
+                    const response = await api.post('/print/print-qr', qrData);
                     
-                    if (response.ok) {
-                      const result = await response.json();
-                      if (result.success) {
-                        alert('✅ QR thanh toán đã được in thành công!');
-                      } else {
-                        alert('❌ Lỗi khi in QR: ' + result.message);
-                      }
+                    if (response.data.success) {
+                      alert('✅ QR thanh toán đã được in thành công!');
                     } else {
-                      alert('❌ Lỗi khi gọi API in QR');
+                      alert('❌ Lỗi khi in QR: ' + response.data.message);
                     }
                   } catch (error) {
                     console.error('❌ Error printing QR:', error);
@@ -1057,24 +1042,12 @@ export default function PosPage() {
 
                     // Gọi API in hóa đơn
                     // Backend sẽ tự tính thuế từ cấu hình admin
-                    const response = await fetch('/api/print/print-bill', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(printBillData)
-                    });
+                    const response = await api.post('/print/print-bill', printBillData);
                     
-                    if (response.ok) {
-                      const result = await response.json();
-                      
-                      if (result.success) {
-                        alert('✅ Hóa đơn đã được in thành công!\n\n🧾 Layout đẹp, rõ ràng\n🖨️ In qua máy Xprinter T80L');
-                      } else {
-                        alert('❌ Lỗi khi in hóa đơn: ' + result.message);
-                      }
+                    if (response.data.success) {
+                      alert('✅ Hóa đơn đã được in thành công!\n\n🧾 Layout đẹp, rõ ràng\n🖨️ In qua máy Xprinter T80L');
                     } else {
-                      alert('❌ Lỗi khi gọi API in hóa đơn. Vui lòng thử lại.');
+                      alert('❌ Lỗi khi in hóa đơn: ' + response.data.message);
                     }
                   } catch (error) {
                     console.error('❌ Error printing receipt:', error);
@@ -1110,24 +1083,12 @@ export default function PosPage() {
                     console.log('💳 Dữ liệu QR:', qrData);
 
                     // Gọi API in QR
-                    const response = await fetch('/api/print/print-qr', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                      },
-                      body: JSON.stringify(qrData)
-                    });
+                    const response = await api.post('/print/print-qr', qrData);
                     
-                    if (response.ok) {
-                      const result = await response.json();
-                      
-                      if (result.success) {
-                        alert('✅ QR thanh toán đã được in thành công!\n\n💳 QR VietQR động\n📱 Khách có thể quét để chuyển khoản\n🖨️ In riêng biệt');
-                      } else {
-                        alert('❌ Lỗi khi in QR: ' + result.message);
-                      }
+                    if (response.data.success) {
+                      alert('✅ QR thanh toán đã được in thành công!\n\n💳 QR VietQR động\n📱 Khách có thể quét để chuyển khoản\n🖨️ In riêng biệt');
                     } else {
-                      alert('❌ Lỗi khi gọi API in QR. Vui lòng thử lại.');
+                      alert('❌ Lỗi khi in QR: ' + response.data.message);
                     }
                   } catch (error) {
                     console.error('❌ Error printing QR:', error);
