@@ -348,13 +348,14 @@ export default function PosPage() {
     }
   };
 
-  const completeOrder = async () => {
+  const completeOrder = async (paymentMethod: 'CASH' | 'BANK_TRANSFER' = 'CASH') => {
     if (!currentOrder) return;
     
     try {
-      // Update order status to COMPLETED using the new endpoint
+      // Update order status to COMPLETED using the new endpoint with payment method
       const updatedOrder = await api.patch(`/pos/orders/${currentOrder.id}/status`, {
-        status: 'COMPLETED'
+        status: 'COMPLETED',
+        paymentMethod: paymentMethod
       });
       
       // Update table status to AVAILABLE when order is completed
@@ -1223,6 +1224,19 @@ export default function PosPage() {
                 title="Backend render QR HTML → Hiển thị → In qua browser print dialog"
               >
                 🖨️ In qua máy tính
+              </button>
+              <button
+                onClick={async () => {
+                  // Hoàn tất thanh toán với phương thức chuyển khoản
+                  if (currentOrder) {
+                    await completeOrder('BANK_TRANSFER');
+                  }
+                  setShowQRModal(false);
+                  setQRData(null);
+                }}
+                className="flex-1 bg-green-600 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-700 text-sm sm:text-base"
+              >
+                ✅ Hoàn tất thanh toán
               </button>
               <button
                 onClick={() => {

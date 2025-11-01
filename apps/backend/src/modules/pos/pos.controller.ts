@@ -124,9 +124,9 @@ export class PosController {
   @RequirePermissions(PERMISSIONS.ORDER_UPDATE)
   @ApiOperation({ summary: 'Update order status' })
   @ApiResponse({ status: 200, description: 'Order status updated successfully' })
-  async updateOrderStatus(@Param('id') id: string, @Body() body: { status: string }, @Request() req) {
+  async updateOrderStatus(@Param('id') id: string, @Body() body: { status: string; paymentMethod?: string }, @Request() req) {
     const userId = req.user?.sub || req.user?.id;
-    return this.orderService.updateStatus(id, body.status, userId);
+    return this.orderService.updateStatus(id, body.status, userId, body.paymentMethod);
   }
 
   @Delete('orders/:id')

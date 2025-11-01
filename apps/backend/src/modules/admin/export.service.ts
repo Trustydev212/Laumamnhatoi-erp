@@ -986,6 +986,15 @@ export class ExportService {
             firstName: true,
             lastName: true
           }
+        },
+        payments: {
+          select: {
+            method: true,
+            amount: true,
+            status: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1, // Get the most recent payment
         }
       },
       orderBy: { createdAt: 'desc' }
@@ -995,6 +1004,13 @@ export class ExportService {
     const orderDetails = [];
     orders.forEach(order => {
       order.orderItems.forEach(item => {
+        // Get payment method (most recent payment)
+        const payment = order.payments && order.payments.length > 0 ? order.payments[0] : null;
+        const paymentMethod = payment?.method || (order.isPaid ? 'CASH' : 'N/A');
+        const paymentMethodDisplay = paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản' : 
+                                     paymentMethod === 'CASH' ? 'Tiền mặt' : 
+                                     paymentMethod;
+
         orderDetails.push({
           orderNumber: order.orderNumber,
           orderId: order.id,
@@ -1011,7 +1027,8 @@ export class ExportService {
           orderTax: Number(order.tax),
           orderTotal: Number(order.total),
           orderStatus: order.status,
-          isPaid: order.isPaid
+          isPaid: order.isPaid,
+          paymentMethod: paymentMethodDisplay // Add payment method
         });
       });
     });
@@ -1039,7 +1056,8 @@ export class ExportService {
       { header: 'Giá tại đơn', key: 'itemPrice', width: 15 },
       { header: 'Thành tiền', key: 'itemSubtotal', width: 15 },
       { header: 'Trạng thái', key: 'orderStatus', width: 15 },
-      { header: 'Đã thanh toán', key: 'isPaid', width: 12 }
+      { header: 'Đã thanh toán', key: 'isPaid', width: 12 },
+      { header: 'Phương thức thanh toán', key: 'paymentMethod', width: 20 }
     ];
 
     orderDetails.forEach(detail => {
@@ -1055,7 +1073,8 @@ export class ExportService {
         itemPrice: detail.itemPrice.toLocaleString('vi-VN') + ' đ',
         itemSubtotal: detail.itemSubtotal.toLocaleString('vi-VN') + ' đ',
         orderStatus: detail.orderStatus,
-        isPaid: detail.isPaid ? 'Có' : 'Không'
+        isPaid: detail.isPaid ? 'Có' : 'Không',
+        paymentMethod: detail.paymentMethod || 'N/A'
       });
     });
 
@@ -1126,13 +1145,26 @@ export class ExportService {
       doc.fontSize(14).text('Chi tiết (10 dòng đầu)', 50, y);
       y += 30;
 
+      // Table headers
+      doc.fontSize(10).font('Helvetica-Bold');
+      y += 5;
+      doc.text('Mã đơn', 50, y);
+      doc.text('Thời gian', 150, y);
+      doc.text('Bàn', 250, y);
+      doc.text('Món', 300, y);
+      doc.text('SL', 450, y);
+      doc.text('Tổng', 480, y);
+      doc.text('PTTT', 550, y);
+      y += 15;
+      doc.font('Helvetica');
+      
       orderDetails.slice(0, 10).forEach((detail, idx) => {
         if (y > 750) {
           doc.addPage();
           y = 50;
         }
         doc.fontSize(10).text(
-          `${detail.orderNumber} | ${detail.menuName} | ${detail.quantity}x | ${detail.itemSubtotal.toLocaleString('vi-VN')} đ | ${detail.orderDate.toLocaleDateString('vi-VN')}`,
+          `${detail.orderNumber} | ${detail.menuName} | ${detail.quantity}x | ${detail.itemSubtotal.toLocaleString('vi-VN')} đ | ${detail.orderDate.toLocaleDateString('vi-VN')} | ${detail.paymentMethod || 'N/A'}`,
           50, y
         );
         y += 20;

@@ -340,7 +340,7 @@ export class OrderService {
     return updatedOrder;
   }
 
-  async updateStatus(id: string, status: string, userId?: string) {
+  async updateStatus(id: string, status: string, userId?: string, paymentMethod?: string) {
     const order = await this.findOne(id);
     
     // Prepare update data
@@ -375,10 +375,12 @@ export class OrderService {
 
     // If status is COMPLETED, create a payment record
     if (status === 'COMPLETED') {
+      // Use provided payment method or default to CASH
+      const method = paymentMethod || 'CASH';
       await this.prisma.payment.create({
         data: {
           orderId: id,
-          method: 'CASH', // Default to cash payment
+          method: method, // BANK_TRANSFER for QR payment, CASH for cash payment
           amount: Number(order.total),
           status: 'SUCCESS',
           processedAt: new Date(),
