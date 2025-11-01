@@ -25,7 +25,14 @@ import { HealthController } from './health.controller';
     // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: [
+        '.env.local',
+        '.env',
+        '../.env', // Root project .env
+        '../../.env', // Fallback to project root
+      ],
+      // Also load from process.env (useful for PM2 environment variables)
+      expandVariables: true,
     }),
     
     // Scheduling

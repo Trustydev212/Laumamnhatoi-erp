@@ -12,19 +12,43 @@ export class ChatbotService {
     private prisma: PrismaService,
     private configService: ConfigService
   ) {
-    // Initialize OpenAI client - Try ConfigService first, fallback to process.env
-    const apiKey = this.configService.get<string>('OPENAI_API_KEY') || process.env.OPENAI_API_KEY;
+    this.initializeOpenAI();
+  }
+
+  /**
+   * Initialize OpenAI client - can be called to re-initialize if needed
+   */
+  private initializeOpenAI() {
+    // Try multiple sources: ConfigService, process.env
+    const apiKey = 
+      this.configService.get<string>('OPENAI_API_KEY') || 
+      process.env.OPENAI_API_KEY;
+    
+    // Debug logging to help troubleshoot
+    const hasConfigKey = !!this.configService.get<string>('OPENAI_API_KEY');
+    const hasProcessEnvKey = !!process.env.OPENAI_API_KEY;
     
     if (!apiKey || apiKey.trim() === '') {
       console.warn('⚠️  OPENAI_API_KEY not found in environment variables.');
+      console.warn(`   ConfigService has key: ${hasConfigKey}`);
+      console.warn(`   process.env has key: ${hasProcessEnvKey}`);
       console.warn('⚠️  Please add OPENAI_API_KEY to your .env file or environment variables.');
+      console.warn('⚠️  Location: apps/backend/.env');
       console.warn('⚠️  Chatbot functionality will be disabled until API key is configured.');
       this.apiKeyConfigured = false;
     } else {
+      const trimmedKey = apiKey.trim();
+      // Validate API key format (should start with sk-)
+      if (!trimmedKey.startsWith('sk-')) {
+        console.warn('⚠️  OPENAI_API_KEY format may be invalid (should start with "sk-")');
+        console.warn(`   Key starts with: ${trimmedKey.substring(0, 3)}...`);
+      }
+      
       try {
-        this.openai = new OpenAI({ apiKey: apiKey.trim() });
+        this.openai = new OpenAI({ apiKey: trimmedKey });
         this.apiKeyConfigured = true;
         console.log('✅ OpenAI client initialized successfully');
+        console.log(`   API Key loaded from: ${hasConfigKey ? 'ConfigService' : 'process.env'}`);
       } catch (error) {
         console.error('❌ Failed to initialize OpenAI client:', error);
         this.apiKeyConfigured = false;
