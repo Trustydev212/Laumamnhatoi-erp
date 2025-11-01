@@ -924,6 +924,50 @@ export default function PosPage() {
                           💵 Thanh toán tiền mặt & In hóa đơn
                         </button>
                         <button
+                          onClick={async () => {
+                            // Tự động hoàn tất thanh toán với phương thức chuyển khoản
+                            if (currentOrder) {
+                              try {
+                                // Update order status to COMPLETED with BANK_TRANSFER method
+                                const updatedOrder = await api.patch(`/pos/orders/${currentOrder.id}/status`, {
+                                  status: 'COMPLETED',
+                                  paymentMethod: 'BANK_TRANSFER'
+                                });
+                                
+                                // Update table status to AVAILABLE when order is completed
+                                if (selectedTable) {
+                                  await api.patch(`/pos/tables/${selectedTable.id}`, {
+                                    status: 'AVAILABLE'
+                                  });
+                                }
+                                
+                                // Show bill with order data
+                                setBillData(updatedOrder.data);
+                                
+                                // Show QR modal directly
+                                const qrDataValue = {
+                                  amount: Number(updatedOrder.data.total || updatedOrder.data.subtotal) || 0,
+                                  billId: updatedOrder.data.id || updatedOrder.data.orderNumber || 'UNKNOWN'
+                                };
+                                setQRData(qrDataValue);
+                                setShowQRModal(true);
+                                
+                                // Clear everything and reload
+                                setCart([]);
+                                setCurrentOrder(null);
+                                loadData();
+                              } catch (error: any) {
+                                console.error('Error completing order with bank transfer:', error);
+                                alert(`Có lỗi khi hoàn thành đơn hàng: ${error.response?.data?.message || error.message}`);
+                              }
+                            }
+                          }}
+                          className="flex-1 sm:flex-none px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 shadow-md hover:shadow-lg transition-all text-sm font-medium"
+                          title="Thanh toán chuyển khoản và hiển thị QR code"
+                        >
+                          💳 Thanh toán chuyển khoản
+                        </button>
+                        <button
                           onClick={() => {
                             setBillData(currentOrder);
                             setShowBill(true);
@@ -1048,56 +1092,75 @@ export default function PosPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 no-print">
-              <button
-                onClick={async () => {
-                  // Tự động hoàn tất thanh toán với phương thức chuyển khoản khi click "In QR thanh toán"
-                  // Tìm orderId từ billData
-                  const orderId = billData.id || currentOrder?.id;
-                  
-                  if (orderId && !billData.isPaid) {
-                    try {
-                      // Update order status to COMPLETED with BANK_TRANSFER method
-                      const updatedOrder = await api.patch(`/pos/orders/${orderId}/status`, {
-                        status: 'COMPLETED',
-                        paymentMethod: 'BANK_TRANSFER'
-                      });
-                      
-                      // Update table status to AVAILABLE when order is completed
-                      if (selectedTable) {
-                        await api.patch(`/pos/tables/${selectedTable.id}`, {
-                          status: 'AVAILABLE'
+              {!billData.isPaid && (
+                <button
+                  onClick={async () => {
+                    // Tự động hoàn tất thanh toán với phương thức chuyển khoản khi click từ bill modal
+                    const orderId = billData.id || currentOrder?.id;
+                    
+                    if (orderId) {
+                      try {
+                        // Update order status to COMPLETED with BANK_TRANSFER method
+                        const updatedOrder = await api.patch(`/pos/orders/${orderId}/status`, {
+                          status: 'COMPLETED',
+                          paymentMethod: 'BANK_TRANSFER'
                         });
+                        
+                        // Update table status to AVAILABLE when order is completed
+                        if (selectedTable) {
+                          await api.patch(`/pos/tables/${selectedTable.id}`, {
+                            status: 'AVAILABLE'
+                          });
+                        }
+                        
+                        // Update bill data with completed order
+                        setBillData(updatedOrder.data);
+                        
+                        // Show success message
+                        alert('Đã hoàn tất thanh toán chuyển khoản!');
+                        
+                        // Clear cart and reload
+                        setCart([]);
+                        setCurrentOrder(null);
+                        loadData();
+                      } catch (error: any) {
+                        console.error('Error completing order with bank transfer:', error);
+                        alert(`Có lỗi khi hoàn thành đơn hàng: ${error.response?.data?.message || error.message}`);
+                        return;
                       }
-                      
-                      // Update bill data with completed order
-                      setBillData(updatedOrder.data);
-                      
-                      // Show success message
-                      alert('Đã hoàn tất thanh toán chuyển khoản!');
-                      
-                      // Clear cart and reload
-                      setCart([]);
-                      setCurrentOrder(null);
-                      loadData();
-                    } catch (error: any) {
-                      console.error('Error completing order with bank transfer:', error);
-                      alert(`Có lỗi khi hoàn thành đơn hàng: ${error.response?.data?.message || error.message}`);
-                      return;
                     }
-                  }
-                  
-                  // Hiển thị QR modal để in qua browser
-                  const qrDataValue = {
-                    amount: Number(billData.total || billData.subtotal) || 0,
-                    billId: billData.id || billData.orderNumber || 'UNKNOWN'
-                  };
-                  setQRData(qrDataValue);
-                  setShowQRModal(true);
-                }}
-                className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
-              >
-                💳 Thanh toán chuyển khoản & In QR
-              </button>
+                    
+                    // Hiển thị QR modal để in qua browser
+                    const qrDataValue = {
+                      amount: Number(billData.total || billData.subtotal) || 0,
+                      billId: billData.id || billData.orderNumber || 'UNKNOWN'
+                    };
+                    setQRData(qrDataValue);
+                    setShowBill(false); // Đóng bill modal
+                    setShowQRModal(true); // Mở QR modal
+                  }}
+                  className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
+                >
+                  💳 Thanh toán chuyển khoản & In QR
+                </button>
+              )}
+              {billData.isPaid && (
+                <button
+                  onClick={() => {
+                    // Đơn hàng đã được thanh toán, chỉ hiển thị QR để in
+                    const qrDataValue = {
+                      amount: Number(billData.total || billData.subtotal) || 0,
+                      billId: billData.id || billData.orderNumber || 'UNKNOWN'
+                    };
+                    setQRData(qrDataValue);
+                    setShowBill(false); // Đóng bill modal
+                    setShowQRModal(true); // Mở QR modal
+                  }}
+                  className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
+                >
+                  💳 Xem/In QR thanh toán
+                </button>
+              )}
               {/* Nút in qua máy tính - Backend render ESC/POS HTML */}
               <button
                 onClick={async () => {
