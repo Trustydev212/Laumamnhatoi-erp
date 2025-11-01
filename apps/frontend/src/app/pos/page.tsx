@@ -1032,55 +1032,6 @@ export default function PosPage() {
               >
                 💳 In QR thanh toán
               </button>
-              <button
-                onClick={async () => {
-                  try {
-                    // Chuẩn bị dữ liệu hóa đơn
-                    // Backend sẽ tự tính thuế từ cấu hình admin
-                    
-                    // Lấy items từ billData (có thể là items hoặc orderItems)
-                    const orderItems = billData.items || billData.orderItems || [];
-                    
-                    // Validate items
-                    if (!Array.isArray(orderItems) || orderItems.length === 0) {
-                      alert('❌ Không có món ăn nào trong hóa đơn. Vui lòng kiểm tra lại!');
-                      return;
-                    }
-                    
-                    const printBillData = {
-                      id: billData.id || billData.orderNumber || 'UNKNOWN',
-                      table: selectedTable?.name || billData.table?.name || 'Tại quầy',
-                      time: new Date().toLocaleTimeString('vi-VN'),
-                      items: orderItems.map((item: any) => ({
-                        name: item.menu?.name || item.name || 'Món ăn',
-                        qty: item.quantity || item.qty || 1,
-                        price: item.price || item.subtotal || 0
-                      }))
-                      // Backend sẽ tự tính subtotal, thuế, và total từ items
-                    };
-
-                    console.log('📋 Dữ liệu hóa đơn:', printBillData);
-
-                    // Gọi API in hóa đơn
-                    // Backend sẽ tự tính thuế từ cấu hình admin
-                    const response = await api.post('/print/print-bill', printBillData);
-                    
-                    if (response.data.success) {
-                      alert('✅ Hóa đơn đã được in thành công!\n\n🧾 Layout đẹp, rõ ràng\n🖨️ In qua máy Xprinter T80L');
-                    } else {
-                      alert('❌ Lỗi khi in hóa đơn: ' + response.data.message);
-                    }
-                  } catch (error) {
-                    console.error('❌ Error printing receipt:', error);
-                    alert('❌ Lỗi khi in hóa đơn: ' + (error instanceof Error ? error.message : String(error)));
-                  }
-                }}
-                className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
-                title="In trực tiếp qua máy in ESC/POS (USB/LAN)"
-              >
-                🖨️ In máy Xprinter
-              </button>
-              
               {/* Nút in qua máy tính - Backend render ESC/POS HTML */}
               <button
                 onClick={async () => {
@@ -1193,41 +1144,6 @@ export default function PosPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 no-print">
-              <button
-                onClick={async () => {
-                  try {
-                    if (!vietQRConfig || !qrData) {
-                      alert('❌ Thiếu thông tin cấu hình QR');
-                      return;
-                    }
-
-                    // Tạo QR URL từ config
-                    const qrUrl = `https://img.vietqr.io/image/${vietQRConfig.acqId}-${vietQRConfig.accountNo}-compact2.png?amount=${qrData.amount}&addInfo=HD${qrData.billId}&accountName=${encodeURIComponent(vietQRConfig.accountName)}`;
-                    
-                    console.log('🖨️ In QR qua máy Xprinter:', { qrUrl, amount: qrData.amount, billId: qrData.billId });
-
-                    // Gọi API in QR qua máy in vật lý
-                    const response = await api.post('/print/print-qr-from-url', {
-                      qrUrl,
-                      amount: qrData.amount,
-                      billId: qrData.billId
-                    });
-
-                    if (response.data.success) {
-                      alert('✅ QR thanh toán đã được in thành công qua máy Xprinter!');
-                    } else {
-                      alert('❌ Lỗi khi in QR: ' + response.data.message);
-                    }
-                  } catch (error) {
-                    console.error('❌ Error printing QR to printer:', error);
-                    alert('❌ Lỗi khi in QR: ' + (error instanceof Error ? error.message : String(error)));
-                  }
-                }}
-                className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
-                title="In QR trực tiếp qua máy in Xprinter (ESC/POS)"
-              >
-                🖨️ In qua máy Xprinter
-              </button>
               <button
                 onClick={async () => {
                   try {
