@@ -5,6 +5,7 @@ import { AuditLoggerService } from '../../../common/audit/audit-logger.service';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { MenuIngredientService } from './menu-ingredient.service';
+import { TaxConfigService } from '../../../services/tax-config.service';
 // OrderStatus is now a string type
 
 @Injectable()
@@ -14,6 +15,7 @@ export class OrderService {
     private realtimeGateway: RealtimeGateway,
     private menuIngredientService: MenuIngredientService,
     private auditLogger: AuditLoggerService,
+    private taxConfigService: TaxConfigService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
@@ -67,8 +69,14 @@ export class OrderService {
       });
     }
 
-    const tax = subtotal * 0.1; // 10% tax
-    const total = subtotal + tax - (orderData.discount || 0); // Total includes tax
+    // Calculate tax using TaxConfigService
+    const taxConfig = await this.taxConfigService.getTaxConfig();
+    const taxCalculation = await this.taxConfigService.calculateTax(subtotal);
+    
+    // Use calculated tax or 0 if tax is disabled
+    const tax = taxCalculation.vatEnabled ? taxCalculation.vatAmount : 0;
+    const serviceCharge = taxCalculation.serviceChargeEnabled ? taxCalculation.serviceChargeAmount : 0;
+    const total = subtotal + tax + serviceCharge - (orderData.discount || 0); // Total includes tax and service charge
 
     // Create order
     const order = await this.prisma.order.create({
@@ -255,8 +263,14 @@ export class OrderService {
       subtotal += Number(item.subtotal);
     }
 
-    const tax = subtotal * 0.1; // 10% tax
-    const total = subtotal + tax; // Total includes tax
+    // Calculate tax using TaxConfigService
+    const taxConfig = await this.taxConfigService.getTaxConfig();
+    const taxCalculation = await this.taxConfigService.calculateTax(subtotal);
+    
+    // Use calculated tax or 0 if tax is disabled
+    const tax = taxCalculation.vatEnabled ? taxCalculation.vatAmount : 0;
+    const serviceCharge = taxCalculation.serviceChargeEnabled ? taxCalculation.serviceChargeAmount : 0;
+    const total = subtotal + tax + serviceCharge; // Total includes tax and service charge
 
     // Update order totals
     const updatedOrder = await this.prisma.order.update({

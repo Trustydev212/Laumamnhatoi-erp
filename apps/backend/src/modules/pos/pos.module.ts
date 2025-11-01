@@ -3,6 +3,7 @@ import { PrismaModule } from '../../common/prisma/prisma.module';
 import { RealtimeModule } from '../../common/realtime/realtime.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuditLoggerService } from '../../common/audit/audit-logger.service';
+import { TaxConfigService } from '../../services/tax-config.service';
 import { PosController } from './pos.controller';
 import { PosService } from './pos.service';
 import { TableService } from './services/table.service';
@@ -14,7 +15,7 @@ import { CategoryService } from './services/category.service';
 @Module({
   imports: [PrismaModule, RealtimeModule, AuthModule],
   controllers: [PosController],
-  providers: [PosService, TableService, OrderService, MenuService, MenuIngredientService, CategoryService, AuditLoggerService],
+  providers: [PosService, TableService, OrderService, MenuService, MenuIngredientService, CategoryService, AuditLoggerService, TaxConfigService],
   exports: [PosService, TableService, OrderService, MenuService, MenuIngredientService, CategoryService],
 })
 export class PosModule {}
