@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { usePermissions } from '@/hooks/usePermissions';
 import ResponsiveTable from '@/components/responsive-table';
+import { ChartBarIcon, BoxIcon } from '@/components/icons';
 
 // Interfaces
 interface Ingredient {
@@ -566,14 +567,6 @@ export default function InventoryPage() {
                 Quản lý kho
               </h1>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto ml-auto">
-              <span className="text-xs sm:text-sm text-gray-700 font-medium hidden sm:block">
-                Xin chào, <span className="text-blue-600">{user?.firstName} {user?.lastName}</span>
-              </span>
-              <span className="text-xs text-gray-500 sm:hidden">
-                {user?.firstName}
-              </span>
-            </div>
           </div>
         </div>
       </div>
@@ -590,17 +583,19 @@ export default function InventoryPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              📊 Tổng quan
+              <ChartBarIcon className="w-4 h-4 inline mr-1" />
+              Tổng quan
             </button>
             <button
               onClick={() => setActiveTab('ingredients')}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center ${
                 activeTab === 'ingredients'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              🥬 Nguyên liệu
+              <BoxIcon className="w-4 h-4 mr-1" />
+              Nguyên liệu
             </button>
             <button
               onClick={() => setActiveTab('suppliers')}
@@ -812,7 +807,10 @@ export default function InventoryPage() {
 
                 {/* Stock Status Filter */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium mb-1">📊 Trạng thái</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1 flex items-center gap-1">
+                    <ChartBarIcon className="w-4 h-4" />
+                    Trạng thái
+                  </label>
                   <select
                     value={stockStatusFilter}
                     onChange={(e) => setStockStatusFilter(e.target.value)}
@@ -1137,7 +1135,10 @@ export default function InventoryPage() {
 
                       {/* Ingredients List */}
                       <div>
-                        <h4 className="font-semibold text-sm mb-2">🥬 Nguyên liệu</h4>
+                        <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
+                          <BoxIcon className="w-4 h-4 text-gray-600" />
+                          Nguyên liệu
+                        </h4>
                         {menuIngredients.length === 0 ? (
                           <p className="text-gray-500 text-center py-4">Chưa có nguyên liệu nào</p>
                         ) : (

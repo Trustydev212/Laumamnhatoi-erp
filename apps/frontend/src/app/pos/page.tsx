@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { usePermissions } from '@/hooks/usePermissions';
+import { PlusIcon, TableIcon, MenuIcon } from '@/components/icons';
 
 interface Table {
   id: string;
@@ -606,7 +607,7 @@ export default function PosPage() {
                       className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 active:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-sm font-medium"
                       title="Thêm bàn mới"
                     >
-                      <span className="text-base sm:text-lg">➕</span>
+                      <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span>Bàn</span>
                     </button>
                     <button
@@ -618,7 +619,7 @@ export default function PosPage() {
                       className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:bg-blue-700 shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-sm font-medium"
                       title="Quản lý bàn"
                     >
-                      <span className="text-base sm:text-lg">🪑</span>
+                      <TableIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span>Bàn</span>
                     </button>
                   </>
@@ -633,30 +634,12 @@ export default function PosPage() {
                     className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 active:bg-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-sm font-medium"
                     title="Quản lý món ăn"
                   >
-                    <span className="text-base sm:text-lg">🍽️</span>
+                    <MenuIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                     <span>Món</span>
                   </button>
                 )}
               </div>
 
-              {/* User Info & Logout */}
-              <div className="flex items-center gap-2 sm:gap-3 ml-auto">
-                <span className="text-xs sm:text-sm text-gray-700 font-medium hidden sm:block">
-                  Xin chào, <span className="text-blue-600">{user?.firstName} {user?.lastName}</span>
-                </span>
-                <span className="text-xs text-gray-500 sm:hidden">
-                  {user?.firstName}
-                </span>
-                <button
-                  onClick={logout}
-                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 active:bg-red-700 shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-sm font-medium"
-                  title="Đăng xuất"
-                >
-                  <span className="text-base sm:text-lg">🚪</span>
-                  <span className="hidden sm:inline">Thoát</span>
-                  <span className="sm:hidden">X</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -681,21 +664,23 @@ export default function PosPage() {
                       setCurrentOrder(null);
                     }
                   }}
-                    className={`p-2 sm:p-3 rounded-lg border-2 transition-colors text-xs sm:text-sm ${
+                    className={`p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 text-xs sm:text-sm ${
                       selectedTable?.id === table.id
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-blue-500 bg-blue-50 shadow-md scale-105'
                         : (table.status === 'AVAILABLE' || clearedTables.has(table.id))
-                        ? 'border-green-300 bg-green-50 hover:bg-green-100'
-                        : 'border-red-300 bg-red-50'
+                        ? 'border-green-200 bg-green-50/50 hover:bg-green-100 hover:border-green-300 hover:shadow-sm'
+                        : 'border-red-200 bg-red-50/50 hover:bg-red-100 hover:border-red-300'
                     }`}
                   >
                     <div className="text-center">
-                      <div className="font-semibold">{table.name}</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="font-semibold text-gray-900 mb-1">{table.name}</div>
+                      <div className="text-xs sm:text-sm text-gray-600 mb-1">
                         {table.capacity} người
                       </div>
-                      <div className={`text-xs mt-1 ${
-                        (table.status === 'AVAILABLE' || clearedTables.has(table.id)) ? 'text-green-600' : 'text-red-600'
+                      <div className={`text-xs font-medium px-2 py-0.5 rounded-full inline-block ${
+                        (table.status === 'AVAILABLE' || clearedTables.has(table.id)) 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-red-100 text-red-700'
                       }`}>
                         {(table.status === 'AVAILABLE' || clearedTables.has(table.id)) ? 'Trống' : 'Có khách'}
                       </div>
@@ -743,9 +728,9 @@ export default function PosPage() {
                 {filteredMenu.map((item) => (
                   <div
                     key={item.id}
-                    className={`border rounded-lg p-2 sm:p-4 cursor-pointer transition-colors ${
+                    className={`border rounded-lg p-3 sm:p-4 cursor-pointer transition-all duration-200 ${
                       item.isAvailable
-                        ? 'hover:bg-gray-50 border-gray-200'
+                        ? 'hover:bg-gray-50 hover:shadow-sm border-gray-200 hover:border-gray-300'
                         : 'opacity-50 cursor-not-allowed border-gray-100'
                     }`}
                     onClick={() => item.isAvailable && addToCart(item)}
@@ -761,7 +746,7 @@ export default function PosPage() {
                         </div>
                       </div>
                       {!item.isAvailable && (
-                        <span className="text-xs bg-red-100 text-red-600 px-1 sm:px-2 py-1 rounded">
+                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
                           Hết
                         </span>
                       )}
@@ -811,9 +796,12 @@ export default function PosPage() {
                   </div>
                   <button
                     onClick={() => setSelectedCustomer(null)}
-                    className="text-red-500 hover:text-red-700 text-xs"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 rounded transition-colors"
+                    title="Xóa khách hàng"
                   >
-                    ✕
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
                   </button>
                 </div>
               ) : (
@@ -834,38 +822,40 @@ export default function PosPage() {
                   if (!menuItem) return null;
                   
                   return (
-                    <div key={item.menuId} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                    <div key={item.menuId} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-gray-200 rounded-lg p-3 sm:p-4 bg-white hover:bg-gray-50 transition-colors">
                       <div className="flex-1 min-w-0 w-full sm:w-auto">
-                        <h4 className="font-medium text-sm sm:text-base">{menuItem.name}</h4>
-                        <div className="flex items-center justify-between sm:block mt-1">
-                          <p className="text-xs sm:text-sm text-gray-600">
+                        <h4 className="font-semibold text-sm sm:text-base text-gray-900">{menuItem.name}</h4>
+                        <div className="flex items-center justify-between sm:block mt-1.5">
+                          <p className="text-xs sm:text-sm text-gray-500">
                             {Number(menuItem.price).toLocaleString('vi-VN')} ₫/món
                           </p>
-                          <p className="text-xs sm:text-sm font-semibold text-green-600 sm:hidden">
+                          <p className="text-xs sm:text-sm font-bold text-green-600 sm:hidden">
                             Tổng: {(Number(menuItem.price) * item.quantity).toLocaleString('vi-VN')} ₫
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between w-full sm:w-auto gap-2 sm:gap-3">
-                        <div className="flex items-center space-x-2 sm:space-x-3 bg-white rounded-lg border border-gray-200 px-2 py-1">
+                      <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+                        <div className="flex items-center space-x-2 bg-gray-50 rounded-lg border border-gray-200 px-2.5 py-1.5">
                           <button
                             onClick={() => updateCartItem(item.menuId, item.quantity - 1)}
-                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm sm:text-base font-semibold transition-colors"
+                            className="w-7 h-7 rounded-full bg-white hover:bg-gray-200 border border-gray-300 flex items-center justify-center text-base font-semibold text-gray-700 transition-all hover:shadow-sm"
                             aria-label="Giảm số lượng"
                           >
                             −
                           </button>
-                          <span className="w-8 sm:w-10 text-center text-sm sm:text-base font-semibold">{item.quantity}</span>
+                          <span className="w-10 text-center text-sm font-bold text-gray-900">{item.quantity}</span>
                           <button
                             onClick={() => updateCartItem(item.menuId, item.quantity + 1)}
-                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm sm:text-base font-semibold transition-colors"
+                            className="w-7 h-7 rounded-full bg-white hover:bg-gray-200 border border-gray-300 flex items-center justify-center text-base font-semibold text-gray-700 transition-all hover:shadow-sm"
                             aria-label="Tăng số lượng"
                           >
                             +
                           </button>
                         </div>
-                        <div className="hidden sm:block w-24 text-right font-semibold text-sm">
-                          {(Number(menuItem.price) * item.quantity).toLocaleString('vi-VN')} ₫
+                        <div className="hidden sm:block w-28 text-right">
+                          <p className="font-bold text-sm text-gray-900">
+                            {(Number(menuItem.price) * item.quantity).toLocaleString('vi-VN')} ₫
+                          </p>
                         </div>
                         <button
                           onClick={() => updateCartItem(item.menuId, 0)}
@@ -919,7 +909,7 @@ export default function PosPage() {
                         onClick={currentOrder ? addToExistingOrder : createOrder}
                         className="flex-1 bg-blue-500 text-white py-2.5 px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base font-medium"
                       >
-                        {currentOrder ? '🔄 Cập nhật đơn hàng' : '➕ Tạo đơn hàng'}
+                        {currentOrder ? 'Cập nhật đơn hàng' : 'Tạo đơn hàng'}
                       </button>
                     </div>
 
@@ -928,25 +918,25 @@ export default function PosPage() {
                       <div className="flex flex-col sm:flex-row gap-2">
                         <button
                           onClick={completeOrder}
-                          className="flex-1 bg-green-500 text-white py-2.5 px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base font-medium"
+                          className="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-md hover:shadow-lg transition-all text-sm sm:text-base font-semibold"
                         >
-                          ✅ Thanh toán & In hóa đơn
+                          Thanh toán & In hóa đơn
                         </button>
                         <button
                           onClick={() => {
                             setBillData(currentOrder);
                             setShowBill(true);
                           }}
-                          className="flex-1 sm:flex-none px-4 py-2.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm font-medium"
+                          className="flex-1 sm:flex-none px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 shadow-md hover:shadow-lg transition-all text-sm font-medium"
                           title="Xem hóa đơn trước khi thanh toán"
                         >
-                          👁️ Xem hóa đơn
+                          Xem hóa đơn
                         </button>
                         <button
                           onClick={() => setShowTransferModal(true)}
-                          className="flex-1 sm:flex-none px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium"
+                          className="flex-1 sm:flex-none px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:bg-orange-800 shadow-md hover:shadow-lg transition-all text-sm font-medium"
                         >
-                          🔄 Chuyển bàn
+                          Chuyển bàn
                         </button>
                       </div>
                     )}

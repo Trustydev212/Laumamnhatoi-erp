@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import ResponsiveTable from '@/components/responsive-table';
+import { ChartBarIcon } from '@/components/icons';
 
 interface SalesReportData {
   totalRevenue: number;
@@ -211,17 +212,10 @@ export default function ReportsPage() {
                 <span>←</span>
                 <span>Quay lại</span>
               </button>
-              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                📊 Báo cáo & Thống kê
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <ChartBarIcon className="w-5 h-5 text-gray-600" />
+                Báo cáo & Thống kê
               </h1>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto ml-auto">
-              <span className="text-xs sm:text-sm text-gray-700 font-medium hidden sm:block">
-                Xin chào, <span className="text-blue-600">{user?.firstName} {user?.lastName}</span>
-              </span>
-              <span className="text-xs text-gray-500 sm:hidden">
-                {user?.firstName}
-              </span>
             </div>
           </div>
         </div>
@@ -230,31 +224,35 @@ export default function ReportsPage() {
       <div className="max-w-7xl mx-auto py-3 sm:py-6 px-2 sm:px-6 lg:px-8">
         {/* Date Range Filter */}
         <div className="mb-4 sm:mb-6">
-          <div className="bg-white rounded-lg shadow p-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-gray-700">📅 Khoảng thời gian:</label>
-                <input
-                  type="date"
-                  value={dateRange.startDate}
-                  onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
-                  className="px-3 py-1 border rounded-lg text-sm"
-                />
-                <span className="text-gray-500">đến</span>
-                <input
-                  type="date"
-                  value={dateRange.endDate}
-                  onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
-                  className="px-3 py-1 border rounded-lg text-sm"
-                />
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  Khoảng thời gian:
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={dateRange.startDate}
+                    onChange={(e) => setDateRange({...dateRange, startDate: e.target.value})}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <span className="text-gray-500 text-sm">đến</span>
+                  <input
+                    type="date"
+                    value={dateRange.endDate}
+                    onChange={(e) => setDateRange({...dateRange, endDate: e.target.value})}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setDateRange({
                     startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                     endDate: new Date().toISOString().split('T')[0]
                   })}
-                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs hover:bg-blue-200"
+                  className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors border border-blue-200"
                 >
                   7 ngày
                 </button>
@@ -263,7 +261,7 @@ export default function ReportsPage() {
                     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                     endDate: new Date().toISOString().split('T')[0]
                   })}
-                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs hover:bg-blue-200"
+                  className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors border border-blue-200"
                 >
                   30 ngày
                 </button>
@@ -272,7 +270,7 @@ export default function ReportsPage() {
                     startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
                     endDate: new Date().toISOString().split('T')[0]
                   })}
-                  className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs hover:bg-blue-200"
+                  className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors border border-blue-200"
                 >
                   90 ngày
                 </button>
@@ -292,7 +290,8 @@ export default function ReportsPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              📊 Tổng quan
+              <ChartBarIcon className="w-4 h-4 inline mr-1" />
+              Tổng quan
             </button>
             <button
               onClick={() => setActiveTab('sales')}

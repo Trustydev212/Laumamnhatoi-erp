@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import { UsersIcon, ChartBarIcon } from '@/components/icons';
 
 interface Customer {
   id: string;
@@ -307,17 +308,10 @@ export default function CustomersPage() {
                 <span>←</span>
                 <span>Quay lại</span>
               </button>
-              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
-                👥 Quản lý khách hàng
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 flex items-center gap-2">
+                <UsersIcon className="w-5 h-5 text-gray-600" />
+                Quản lý khách hàng
               </h1>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto ml-auto">
-              <span className="text-xs sm:text-sm text-gray-700 font-medium hidden sm:block">
-                Xin chào, <span className="text-blue-600">{user?.firstName} {user?.lastName}</span>
-              </span>
-              <span className="text-xs text-gray-500 sm:hidden">
-                {user?.firstName}
-              </span>
             </div>
           </div>
         </div>
@@ -335,7 +329,8 @@ export default function CustomersPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              📊 Tổng quan
+              <ChartBarIcon className="w-4 h-4 inline mr-1" />
+              Tổng quan
             </button>
             <button
               onClick={() => setActiveTab('customers')}
@@ -345,7 +340,8 @@ export default function CustomersPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              👥 Khách hàng
+              <UsersIcon className="w-4 h-4 inline mr-1" />
+              Khách hàng
             </button>
             <button
               onClick={() => setActiveTab('points')}
