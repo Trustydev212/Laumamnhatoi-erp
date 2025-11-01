@@ -370,6 +370,7 @@ export class OrderService {
             lastName: true,
           },
         },
+        payments: true, // Include payments to check payment method
       },
     });
 
@@ -386,6 +387,52 @@ export class OrderService {
           processedAt: new Date(),
         },
       });
+
+      // Fetch order again with payments after creating payment
+      const orderWithPayment = await this.prisma.order.findUnique({
+        where: { id },
+        include: {
+          orderItems: {
+            include: {
+              menu: true,
+            },
+          },
+          table: true,
+          user: {
+            select: {
+              id: true,
+              username: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          payments: {
+            orderBy: {
+              processedAt: 'desc',
+            },
+          },
+        },
+      });
+
+      // Emit realtime event
+      this.realtimeGateway.emitOrderStatusChanged(id, status);
+
+      // Log audit event
+      if (userId) {
+        await this.auditLogger.logAction(
+          userId,
+          'UPDATE_ORDER_STATUS',
+          'Order',
+          order.id,
+          { status: order.status },
+          {
+            orderNumber: order.orderNumber,
+            newStatus: status
+          }
+        );
+      }
+
+      return orderWithPayment;
     }
 
     // Emit realtime event
