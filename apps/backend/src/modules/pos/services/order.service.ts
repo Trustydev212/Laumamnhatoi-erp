@@ -486,6 +486,16 @@ export class OrderService {
       }
     }
 
+    // Delete payments first (before deleting order due to foreign key constraint)
+    try {
+      await this.prisma.payment.deleteMany({
+        where: { orderId: id },
+      });
+    } catch (paymentError) {
+      console.error('Error deleting payments:', paymentError);
+      // Continue with order deletion even if payment deletion fails
+    }
+
     // Delete order (orderItems will be cascade deleted due to onDelete: Cascade)
     try {
       return await this.prisma.order.delete({
