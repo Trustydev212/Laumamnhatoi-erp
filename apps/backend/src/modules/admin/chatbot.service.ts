@@ -200,7 +200,8 @@ ${recentOrders.slice(0, 5).map((order, idx) =>
       // Get business context
       const context = await this.getBusinessContext();
 
-      const systemPrompt = `Bạn là một trợ lý AI thông minh chuyên phân tích dữ liệu cho hệ thống ERP của nhà hàng "LẨU MẮM NHÀ TÔI".
+      // Model o1-mini không hỗ trợ system role, nên gộp system prompt vào user message
+      const fullUserMessage = `Bạn là một trợ lý AI thông minh chuyên phân tích dữ liệu cho hệ thống ERP của nhà hàng "LẨU MẮM NHÀ TÔI".
 
 BẠN CÓ THỂ:
 - Phân tích doanh thu, bán hàng, tồn kho
@@ -217,9 +218,9 @@ QUY TẮC:
 - Trình bày dễ hiểu, có cấu trúc rõ ràng
 - Đề xuất hành động cụ thể khi phù hợp
 
-Dữ liệu hiện tại của hệ thống sẽ được cung cấp trong context.`;
+---
 
-      const userMessage = `Dữ liệu hệ thống hiện tại:
+Dữ liệu hệ thống hiện tại:
 
 ${context}
 
@@ -232,8 +233,7 @@ Hãy phân tích và trả lời dựa trên dữ liệu trên.`;
       const completion = await this.openai.chat.completions.create({
         model: 'o1-mini', // Using o1-mini for better reasoning
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage }
+          { role: 'user', content: fullUserMessage }
         ],
         temperature: 0.7,
         max_tokens: 1000

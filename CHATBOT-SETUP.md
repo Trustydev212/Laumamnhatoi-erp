@@ -282,6 +282,8 @@ pm2 save
 
 Chatbot đang sử dụng model **o1-mini** của OpenAI để tối ưu chi phí và hiệu suất.
 
+**Lưu ý:** Model `o1-mini` không hỗ trợ `system` role trong messages, nên system prompt được gộp vào user message. Điều này không ảnh hưởng đến chất lượng phản hồi.
+
 ### 8. Chi phí
 
 - Model `o1-mini` có giá rẻ hơn GPT-4
