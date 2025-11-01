@@ -921,7 +921,7 @@ export default function PosPage() {
                           onClick={() => completeOrder('CASH')}
                           className="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-md hover:shadow-lg transition-all text-sm sm:text-base font-semibold"
                         >
-                          Thanh toán & In hóa đơn
+                          💵 Thanh toán tiền mặt & In hóa đơn
                         </button>
                         <button
                           onClick={() => {
@@ -1226,17 +1226,15 @@ export default function PosPage() {
                 🖨️ In qua máy tính
               </button>
               <button
-                onClick={async () => {
-                  // Hoàn tất thanh toán với phương thức chuyển khoản
-                  if (currentOrder) {
-                    await completeOrder('BANK_TRANSFER');
-                  }
+                onClick={() => {
+                  // Đơn hàng đã được hoàn tất khi click "In QR thanh toán"
+                  // Nút này chỉ để đóng modal
                   setShowQRModal(false);
                   setQRData(null);
                 }}
-                className="flex-1 bg-green-600 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-700 text-sm sm:text-base"
+                className="flex-1 bg-gray-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-600 text-sm sm:text-base"
               >
-                ✅ Hoàn tất thanh toán
+                Đóng
               </button>
               <button
                 onClick={() => {

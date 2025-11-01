@@ -952,8 +952,17 @@ export class ExportService {
    * Export chi tiết đơn hàng - mã hóa đơn, món, giá, thời gian bán
    */
   async exportOrderDetails(format: 'excel' | 'pdf', filters: any = {}) {
-    const startDate = filters.startDate ? new Date(filters.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const endDate = filters.endDate ? new Date(filters.endDate) : new Date();
+    // Set start date to beginning of day
+    const startDate = filters.startDate 
+      ? new Date(filters.startDate)
+      : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    startDate.setHours(0, 0, 0, 0);
+    
+    // Set end date to end of day to include all orders created today
+    const endDate = filters.endDate 
+      ? new Date(filters.endDate) 
+      : new Date();
+    endDate.setHours(23, 59, 59, 999);
 
     const orders = await this.prisma.order.findMany({
       where: {
