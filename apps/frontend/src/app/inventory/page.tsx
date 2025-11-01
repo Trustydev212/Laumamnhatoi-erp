@@ -557,24 +557,22 @@ export default function InventoryPage() {
             <div className="flex items-center w-full sm:w-auto">
               <button
                 onClick={() => router.back()}
-                className="mr-2 sm:mr-4 text-gray-600 hover:text-gray-900 text-sm sm:text-base"
+                className="mr-2 sm:mr-4 flex items-center gap-1.5 text-gray-600 hover:text-gray-900 text-sm sm:text-base font-medium transition-colors"
               >
-                ← Quay lại
+                <span>←</span>
+                <span>Quay lại</span>
               </button>
               <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
                 Quản lý kho
               </h1>
             </div>
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-              <span className="text-xs sm:text-sm text-gray-700 hidden sm:block">
-                Xin chào, {user?.firstName} {user?.lastName}
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto ml-auto">
+              <span className="text-xs sm:text-sm text-gray-700 font-medium hidden sm:block">
+                Xin chào, <span className="text-blue-600">{user?.firstName} {user?.lastName}</span>
               </span>
-              <button
-                onClick={logout}
-                className="px-2 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs sm:text-sm"
-              >
-                Thoát
-              </button>
+              <span className="text-xs text-gray-500 sm:hidden">
+                {user?.firstName}
+              </span>
             </div>
           </div>
         </div>

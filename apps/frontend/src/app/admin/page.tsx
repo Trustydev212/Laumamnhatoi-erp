@@ -431,66 +431,66 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="mb-6">
-          <div className="flex border-b border-gray-200">
+          <div className="flex overflow-x-auto border-b border-gray-200 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'health' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'health' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('health')}
             >
               System Health
             </button>
             <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'logs' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'logs' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('logs')}
             >
               System Logs
             </button>
             <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'activity' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'activity' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('activity')}
             >
               User Activity
             </button>
             <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'performance' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'performance' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('performance')}
             >
-              Performance Metrics
+              Performance
             </button>
             <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'user-management' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'user-management' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('user-management')}
             >
-              User Management
+              Users
             </button>
-              <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'analytics' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            <button
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'analytics' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('analytics')}
             >
               Analytics
-              </button>
+            </button>
             <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'receipt-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'receipt-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('receipt-settings')}
             >
-              Cấu hình hóa đơn
+              Hóa đơn
             </button>
             <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'tax-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'tax-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('tax-settings')}
             >
-              Cấu hình thuế
+              Thuế
             </button>
             <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'vietqr-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'vietqr-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('vietqr-settings')}
             >
-              Cấu hình VietQR
+              VietQR
             </button>
             <button
-              className={`py-2 px-4 text-sm font-medium ${activeTab === 'printer-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'printer-settings' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
               onClick={() => setActiveTab('printer-settings')}
             >
-              Cấu hình máy in
+              Máy in
             </button>
           </div>
         </div>
@@ -1798,8 +1798,8 @@ export default function AdminPage() {
 
       {/* Add User Modal */}
       {showAddUserModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">Add New User</h2>
             <form onSubmit={async (e) => {
               e.preventDefault();
@@ -1924,8 +1924,8 @@ export default function AdminPage() {
 
       {/* Edit User Modal */}
       {showEditUserModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">Edit User</h2>
             <form onSubmit={async (e) => {
               e.preventDefault();
@@ -2380,10 +2380,10 @@ export default function AdminPage() {
       {!showChatbot && (
         <button
           onClick={() => setShowChatbot(true)}
-          className="fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 transition-all z-40"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full p-3 sm:p-4 shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-blue-800 transition-all z-40"
           title="Mở AI Chatbot"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
         </button>

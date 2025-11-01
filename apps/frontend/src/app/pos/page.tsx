@@ -587,57 +587,76 @@ export default function PosPage() {
                 POS - Bán hàng
               </h1>
             </div>
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-              {canManageTables() && (
-                <>
-                  <button
-                    onClick={async () => {
-                      try {
-                        await api.post('/pos/tables', { name: '', capacity: 4, status: 'AVAILABLE' });
-                        alert('Đã thêm bàn mới thành công!');
-                        loadData();
-                      } catch (error: any) {
-                        console.error('Error creating table:', error);
-                        alert(`Có lỗi khi thêm bàn: ${error.response?.data?.message || error.message}`);
-                      }
-                    }}
-                    className="px-2 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-xs sm:text-sm"
-                  >
-                    + Bàn
-                  </button>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto">
+              {/* Action Buttons Group */}
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                {canManageTables() && (
+                  <>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.post('/pos/tables', { name: '', capacity: 4, status: 'AVAILABLE' });
+                          alert('Đã thêm bàn mới thành công!');
+                          loadData();
+                        } catch (error: any) {
+                          console.error('Error creating table:', error);
+                          alert(`Có lỗi khi thêm bàn: ${error.response?.data?.message || error.message}`);
+                        }
+                      }}
+                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 active:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-sm font-medium"
+                      title="Thêm bàn mới"
+                    >
+                      <span className="text-base sm:text-lg">➕</span>
+                      <span>Bàn</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingTable(null);
+                        setNewTable({ name: '', capacity: 4, status: 'AVAILABLE' });
+                        setShowTableModal(true);
+                      }}
+                      className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 active:bg-blue-700 shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-sm font-medium"
+                      title="Quản lý bàn"
+                    >
+                      <span className="text-base sm:text-lg">🪑</span>
+                      <span>Bàn</span>
+                    </button>
+                  </>
+                )}
+                {canManageMenu() && (
                   <button
                     onClick={() => {
-                      setEditingTable(null);
-                      setNewTable({ name: '', capacity: 4, status: 'AVAILABLE' });
-                      setShowTableModal(true);
+                      setEditingMenu(null);
+                      setNewMenu({ name: '', description: '', price: 0, categoryId: categories[0]?.id || '', isAvailable: true });
+                      setShowMenuModal(true);
                     }}
-                    className="px-2 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-xs sm:text-sm"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 active:bg-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-sm font-medium"
+                    title="Quản lý món ăn"
                   >
-                    Bàn
+                    <span className="text-base sm:text-lg">🍽️</span>
+                    <span>Món</span>
                   </button>
-                </>
-              )}
-              {canManageMenu() && (
+                )}
+              </div>
+
+              {/* User Info & Logout */}
+              <div className="flex items-center gap-2 sm:gap-3 ml-auto">
+                <span className="text-xs sm:text-sm text-gray-700 font-medium hidden sm:block">
+                  Xin chào, <span className="text-blue-600">{user?.firstName} {user?.lastName}</span>
+                </span>
+                <span className="text-xs text-gray-500 sm:hidden">
+                  {user?.firstName}
+                </span>
                 <button
-                  onClick={() => {
-                    setEditingMenu(null);
-                    setNewMenu({ name: '', description: '', price: 0, categoryId: categories[0]?.id || '', isAvailable: true });
-                    setShowMenuModal(true);
-                  }}
-                  className="px-2 py-1 bg-green-500 text-white rounded-lg hover:bg-green-600 text-xs sm:text-sm"
+                  onClick={logout}
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 active:bg-red-700 shadow-md hover:shadow-lg transition-all duration-200 text-xs sm:text-sm font-medium"
+                  title="Đăng xuất"
                 >
-                  Món
+                  <span className="text-base sm:text-lg">🚪</span>
+                  <span className="hidden sm:inline">Thoát</span>
+                  <span className="sm:hidden">X</span>
                 </button>
-              )}
-              <span className="text-xs sm:text-sm text-gray-700 hidden sm:block">
-                Xin chào, {user?.firstName} {user?.lastName}
-              </span>
-              <button
-                onClick={logout}
-                className="px-2 py-1 bg-red-500 text-white rounded-lg hover:bg-red-600 text-xs sm:text-sm"
-              >
-                Thoát
-              </button>
+              </div>
             </div>
           </div>
         </div>

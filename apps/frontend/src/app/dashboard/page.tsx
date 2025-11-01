@@ -128,9 +128,9 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex flex-col">
         {/* Welcome Section */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 order-1">
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
             Chào mừng đến với Nhà Tôi ERP! 🍽️
           </h2>
@@ -139,74 +139,8 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Stats Cards */}
-        {loadingStats ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="card p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            ))}
-          </div>
-        ) : stats && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="card p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-blue-700">Doanh thu hôm nay</span>
-                <div className="text-2xl">💰</div>
-              </div>
-              <p className="text-2xl font-bold text-blue-900">
-                {formatCurrency(stats.todayRevenue)}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                {stats.todayOrders} đơn hàng
-              </p>
-            </div>
-
-            <div className="card p-6 bg-gradient-to-br from-green-50 to-green-100 border border-green-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-green-700">Tổng đơn hàng</span>
-                <div className="text-2xl">📋</div>
-              </div>
-              <p className="text-2xl font-bold text-green-900">
-                {stats.totalOrders.toLocaleString('vi-VN')}
-              </p>
-              <p className="text-xs text-green-600 mt-1">
-                Tất cả thời gian
-              </p>
-            </div>
-
-            <div className="card p-6 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-purple-700">Khách hàng</span>
-                <div className="text-2xl">👥</div>
-              </div>
-              <p className="text-2xl font-bold text-purple-900">
-                {stats.totalCustomers.toLocaleString('vi-VN')}
-              </p>
-              <p className="text-xs text-purple-600 mt-1">
-                Đang hoạt động
-              </p>
-            </div>
-
-            <div className="card p-6 bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-orange-700">Món ăn</span>
-                <div className="text-2xl">🍽️</div>
-              </div>
-              <p className="text-2xl font-bold text-orange-900">
-                {stats.totalMenuItems.toLocaleString('vi-VN')}
-              </p>
-              <p className="text-xs text-orange-600 mt-1">
-                {stats.totalTables} bàn
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {/* Main Modules Grid */}
-        <div>
+        {/* Main Modules Grid - Order 2 on mobile/tablet, Order 3 on desktop */}
+        <div className="order-2 lg:order-3">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Các module</h3>
           <div className={`grid grid-cols-1 sm:grid-cols-2 ${
             user?.role === 'ADMIN' 
@@ -258,9 +192,77 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Stats Cards - Order 3 on mobile/tablet, Order 2 on desktop */}
+        <div className="order-3 lg:order-2">
+          {loadingStats ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="card p-6 animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-8 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : stats && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="card p-6 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-700">Doanh thu hôm nay</span>
+                  <div className="text-2xl">💰</div>
+                </div>
+                <p className="text-2xl font-bold text-blue-900">
+                  {formatCurrency(stats.todayRevenue)}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  {stats.todayOrders} đơn hàng
+                </p>
+              </div>
+
+              <div className="card p-6 bg-gradient-to-br from-green-50 to-green-100 border border-green-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-green-700">Đơn hàng hôm nay</span>
+                  <div className="text-2xl">📋</div>
+                </div>
+                <p className="text-2xl font-bold text-green-900">
+                  {stats.todayOrders.toLocaleString('vi-VN')}
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  Đã thanh toán
+                </p>
+              </div>
+
+              <div className="card p-6 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-purple-700">Khách hàng</span>
+                  <div className="text-2xl">👥</div>
+                </div>
+                <p className="text-2xl font-bold text-purple-900">
+                  {stats.totalCustomers.toLocaleString('vi-VN')}
+                </p>
+                <p className="text-xs text-purple-600 mt-1">
+                  Đang hoạt động
+                </p>
+              </div>
+
+              <div className="card p-6 bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-orange-700">Món ăn</span>
+                  <div className="text-2xl">🍽️</div>
+                </div>
+                <p className="text-2xl font-bold text-orange-900">
+                  {stats.totalMenuItems.toLocaleString('vi-VN')}
+                </p>
+                <p className="text-xs text-orange-600 mt-1">
+                  {stats.totalTables} bàn
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Recent Orders Section */}
         {stats && stats.recentOrders && stats.recentOrders.length > 0 && (
-          <div className="card p-6">
+          <div className="card p-6 order-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">📋 Đơn hàng gần đây</h3>
               <button
@@ -308,7 +310,7 @@ export default function DashboardPage() {
         )}
 
         {/* Quick Tips Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 order-5">
           <div className="card p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 border border-indigo-200">
             <h3 className="text-lg font-semibold text-indigo-900 mb-3 flex items-center gap-2">
               💡 Mẹo nhanh
