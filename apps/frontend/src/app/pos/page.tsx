@@ -1049,23 +1049,25 @@ export default function PosPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 no-print">
-              {/* Nút In QR - chỉ hiển thị nếu đơn đã thanh toán bằng chuyển khoản */}
+              {/* Nút In QR Bank - chỉ hiển thị nếu đơn đã thanh toán bằng chuyển khoản */}
               {billData.isPaid && billData.payments && billData.payments.length > 0 && 
                billData.payments[0]?.method === 'BANK_TRANSFER' && (
                 <button
                   onClick={() => {
                     // Đơn hàng đã được thanh toán bằng chuyển khoản, hiển thị QR để in
-                    const qrDataValue = {
-                      amount: Number(billData.total || billData.subtotal) || 0,
-                      billId: billData.id || billData.orderNumber || 'UNKNOWN'
-                    };
-                    setQRData(qrDataValue);
+                    if (!qrData) {
+                      const qrDataValue = {
+                        amount: Number(billData.total || billData.subtotal) || 0,
+                        billId: billData.id || billData.orderNumber || 'UNKNOWN'
+                      };
+                      setQRData(qrDataValue);
+                    }
                     setShowBill(false); // Đóng bill modal
                     setShowQRModal(true); // Mở QR modal
                   }}
-                  className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
+                  className="flex-1 bg-blue-600 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-700 text-sm sm:text-base font-medium"
                 >
-                  💳 In QR thanh toán
+                  💳 In QR Bank
                 </button>
               )}
               {/* Nút in qua máy tính - Backend render ESC/POS HTML */}
@@ -1294,18 +1296,16 @@ export default function PosPage() {
                         });
                       }
                       
-                      // Show bill with order data
+                      // Show bill with order data (bill will have "In QR Bank" button)
                       setBillData(updatedOrder.data);
+                      setShowBill(true);
                       
-                      // Prepare QR data
+                      // Prepare QR data for later use
                       const qrDataValue = {
                         amount: Number(updatedOrder.data.total || updatedOrder.data.subtotal) || 0,
                         billId: updatedOrder.data.id || updatedOrder.data.orderNumber || 'UNKNOWN'
                       };
                       setQRData(qrDataValue);
-                      
-                      // Show bill modal first, then QR modal will be accessible from bill
-                      setShowBill(true);
                       
                       // Show success message
                       alert('Đã hoàn tất thanh toán chuyển khoản! Vui lòng in hóa đơn và QR code.');
