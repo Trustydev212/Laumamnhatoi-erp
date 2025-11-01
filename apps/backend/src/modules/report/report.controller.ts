@@ -40,4 +40,14 @@ export class ReportController {
   async getDashboard() {
     return this.reportService.getDashboard();
   }
+
+  @Get('revenue-daily')
+  @ApiOperation({ summary: 'Get daily revenue data for chart' })
+  @ApiResponse({ status: 200, description: 'Daily revenue data retrieved successfully' })
+  async getDailyRevenue(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.reportService.getDailyRevenue(startDate, endDate);
+  }
 }

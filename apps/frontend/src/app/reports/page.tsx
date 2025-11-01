@@ -10,6 +10,25 @@ interface SalesReportData {
   totalOrders: number;
   orders: any[];
   menuStats: any;
+  dailyRevenue?: Array<{
+    date: string;
+    revenue: number;
+    orderCount: number;
+  }>;
+}
+
+interface DailyRevenueData {
+  dailyRevenue: Array<{
+    date: string;
+    revenue: number;
+    orderCount: number;
+  }>;
+  totalRevenue: number;
+  totalOrders: number;
+  period: {
+    startDate: string;
+    endDate: string;
+  };
 }
 
 interface InventoryReportData {
@@ -44,6 +63,7 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'sales' | 'inventory' | 'customers'>('overview');
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [salesData, setSalesData] = useState<SalesReportData | null>(null);
+  const [dailyRevenueData, setDailyRevenueData] = useState<DailyRevenueData | null>(null);
   const [inventoryData, setInventoryData] = useState<InventoryReportData | null>(null);
   const [customerData, setCustomerData] = useState<CustomerReportData | null>(null);
   const [dateRange, setDateRange] = useState({
@@ -66,6 +86,16 @@ export default function ReportsPage() {
         const dashboardResponse = await api.get('/reports/dashboard');
         console.log('✅ Dashboard data received:', dashboardResponse.data);
         setDashboardData(dashboardResponse.data);
+
+        // Load daily revenue for overview chart (last 14 days)
+        const endDate = new Date().toISOString().split('T')[0];
+        const startDate = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        try {
+          const dailyResponse = await api.get(`/reports/revenue-daily?startDate=${startDate}&endDate=${endDate}`);
+          setDailyRevenueData(dailyResponse.data);
+        } catch (error) {
+          console.error('Failed to load daily revenue for overview:', error);
+        }
       }
       
       // Load sales data
@@ -78,6 +108,15 @@ export default function ReportsPage() {
         const salesResponse = await api.get(url);
         console.log('✅ Sales data received:', salesResponse.data);
         setSalesData(salesResponse.data);
+
+        // Load daily revenue for chart
+        let dailyUrl = '/reports/revenue-daily';
+        if (dateRange.startDate && dateRange.endDate) {
+          dailyUrl += `?startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
+        }
+        const dailyResponse = await api.get(dailyUrl);
+        console.log('✅ Daily revenue data received:', dailyResponse.data);
+        setDailyRevenueData(dailyResponse.data);
       }
       
       // Load inventory data
@@ -329,6 +368,79 @@ export default function ReportsPage() {
               </div>
             </div>
 
+            {/* Revenue Trend Chart (Last 14 days) */}
+            {dailyRevenueData && dailyRevenueData.dailyRevenue.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-semibold mb-4">📈 Xu hướng doanh thu (14 ngày gần nhất)</h2>
+                <div className="overflow-x-auto">
+                  <div className="relative" style={{ height: '250px' }}>
+                    <svg className="w-full h-full" viewBox="0 0 700 250" preserveAspectRatio="xMidYMid meet">
+                      {/* Y-axis labels */}
+                      {(() => {
+                        const maxRevenue = Math.max(...dailyRevenueData.dailyRevenue.map(d => d.revenue));
+                        const yAxisSteps = 4;
+                        const stepValue = maxRevenue / yAxisSteps;
+                        
+                        return Array.from({ length: yAxisSteps + 1 }, (_, i) => {
+                          const value = stepValue * (yAxisSteps - i);
+                          const y = (i / yAxisSteps) * 220 + 15;
+                          return (
+                            <g key={i}>
+                              <line x1="50" y1={y} x2="680" y2={y} stroke="#e5e7eb" strokeWidth="1" />
+                              <text x="45" y={y + 4} textAnchor="end" fontSize="11" fill="#6b7280">
+                                {value > 1000 ? `${(value / 1000).toFixed(0)}k` : Math.round(value)}
+                              </text>
+                            </g>
+                          );
+                        });
+                      })()}
+
+                      {/* Bars */}
+                      {dailyRevenueData.dailyRevenue.map((day, index) => {
+                        const maxRevenue = Math.max(...dailyRevenueData.dailyRevenue.map(d => d.revenue));
+                        const barHeight = maxRevenue > 0 ? (day.revenue / maxRevenue) * 200 : 0;
+                        const barWidth = 630 / dailyRevenueData.dailyRevenue.length;
+                        const x = 60 + (index * barWidth) + (barWidth - Math.min(barWidth - 4, 25)) / 2;
+                        const y = 225 - barHeight;
+                        const width = Math.min(barWidth - 4, 25);
+                        
+                        const date = new Date(day.date);
+                        const dateStr = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+                        
+                        return (
+                          <g key={day.date}>
+                            <rect
+                              x={x}
+                              y={y}
+                              width={width}
+                              height={barHeight}
+                              fill="#10b981"
+                              className="hover:fill-green-600 transition-colors"
+                            />
+                            <text
+                              x={x + width / 2}
+                              y="245"
+                              textAnchor="middle"
+                              fontSize="9"
+                              fill="#6b7280"
+                              transform={`rotate(-45 ${x + width / 2} 245)`}
+                            >
+                              {dateStr}
+                            </text>
+                            <title>{dateStr}: {formatCurrency(day.revenue)} ({day.orderCount} đơn)</title>
+                          </g>
+                        );
+                      })}
+
+                      {/* Axes */}
+                      <line x1="50" y1="225" x2="680" y2="225" stroke="#374151" strokeWidth="2" />
+                      <line x1="50" y1="15" x2="50" y2="225" stroke="#374151" strokeWidth="2" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Recent Orders */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
               <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">📋 Đơn hàng gần đây</h2>
@@ -396,6 +508,11 @@ export default function ReportsPage() {
                   <div className="ml-3">
                     <p className="text-sm font-medium text-gray-500">Tổng doanh thu</p>
                     <p className="text-2xl font-bold text-gray-900">{formatCurrency(salesData.totalRevenue)}</p>
+                    {dailyRevenueData && (
+                      <p className="text-xs text-gray-500">
+                        {dailyRevenueData.period.startDate} - {dailyRevenueData.period.endDate}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -410,10 +527,125 @@ export default function ReportsPage() {
                   <div className="ml-3">
                     <p className="text-sm font-medium text-gray-500">Tổng đơn hàng</p>
                     <p className="text-2xl font-bold text-gray-900">{salesData.totalOrders}</p>
+                    {dailyRevenueData && (
+                      <p className="text-xs text-gray-500">
+                        Trung bình: {dailyRevenueData.dailyRevenue.length > 0 
+                          ? Math.round(salesData.totalOrders / dailyRevenueData.dailyRevenue.length)
+                          : 0} đơn/ngày
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
+
+            {/* Daily Revenue Chart */}
+            {dailyRevenueData && dailyRevenueData.dailyRevenue.length > 0 && (
+              <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+                <h2 className="text-base sm:text-lg font-semibold mb-4">📈 Doanh thu theo thời gian</h2>
+                <div className="overflow-x-auto">
+                  <div className="min-w-full">
+                    {/* Simple bar chart using SVG */}
+                    <div className="relative" style={{ height: '300px' }}>
+                      <svg className="w-full h-full" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid meet">
+                        {/* Y-axis labels */}
+                        {(() => {
+                          const maxRevenue = Math.max(...dailyRevenueData.dailyRevenue.map(d => d.revenue));
+                          const yAxisSteps = 5;
+                          const stepValue = maxRevenue / yAxisSteps;
+                          
+                          return Array.from({ length: yAxisSteps + 1 }, (_, i) => {
+                            const value = stepValue * (yAxisSteps - i);
+                            const y = (i / yAxisSteps) * 250 + 20;
+                            return (
+                              <g key={i}>
+                                <line x1="60" y1={y} x2="760" y2={y} stroke="#e5e7eb" strokeWidth="1" />
+                                <text x="55" y={y + 5} textAnchor="end" fontSize="12" fill="#6b7280">
+                                  {value > 0 ? formatCurrency(value).replace('₫', '').replace(/\./g, '') : '0'}
+                                </text>
+                              </g>
+                            );
+                          });
+                        })()}
+
+                        {/* Bars */}
+                        {dailyRevenueData.dailyRevenue.map((day, index) => {
+                          const maxRevenue = Math.max(...dailyRevenueData.dailyRevenue.map(d => d.revenue));
+                          const barHeight = maxRevenue > 0 ? (day.revenue / maxRevenue) * 250 : 0;
+                          const barWidth = 700 / dailyRevenueData.dailyRevenue.length;
+                          const x = 70 + (index * barWidth) + (barWidth - Math.min(barWidth - 4, 30)) / 2;
+                          const y = 270 - barHeight;
+                          const width = Math.min(barWidth - 4, 30);
+                          
+                          // Format date for display
+                          const date = new Date(day.date);
+                          const dateStr = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+                          
+                          return (
+                            <g key={day.date}>
+                              <rect
+                                x={x}
+                                y={y}
+                                width={width}
+                                height={barHeight}
+                                fill="#3b82f6"
+                                className="hover:fill-blue-600 transition-colors"
+                              />
+                              <text
+                                x={x + width / 2}
+                                y="285"
+                                textAnchor="middle"
+                                fontSize="10"
+                                fill="#6b7280"
+                                transform={`rotate(-45 ${x + width / 2} 285)`}
+                              >
+                                {dateStr}
+                              </text>
+                              <title>{dateStr}: {formatCurrency(day.revenue)} ({day.orderCount} đơn)</title>
+                            </g>
+                          );
+                        })}
+
+                        {/* X-axis line */}
+                        <line x1="60" y1="270" x2="760" y2="270" stroke="#374151" strokeWidth="2" />
+                        
+                        {/* Y-axis line */}
+                        <line x1="60" y1="20" x2="60" y2="270" stroke="#374151" strokeWidth="2" />
+                      </svg>
+                    </div>
+
+                    {/* Legend */}
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                        <span className="text-gray-600">Doanh thu (VND)</span>
+                      </div>
+                      {dailyRevenueData.dailyRevenue.length > 0 && (
+                        <>
+                          <div className="text-gray-600">
+                            Ngày cao nhất: {(() => {
+                              const maxDay = dailyRevenueData.dailyRevenue.reduce((max, day) => 
+                                day.revenue > max.revenue ? day : max
+                              );
+                              const date = new Date(maxDay.date);
+                              return date.toLocaleDateString('vi-VN');
+                            })()}
+                          </div>
+                          <div className="text-gray-600">
+                            Cao nhất: {formatCurrency(Math.max(...dailyRevenueData.dailyRevenue.map(d => d.revenue)))}
+                          </div>
+                          <div className="text-gray-600">
+                            Trung bình: {formatCurrency(
+                              dailyRevenueData.dailyRevenue.reduce((sum, d) => sum + d.revenue, 0) / dailyRevenueData.dailyRevenue.length
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Top Selling Items */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">

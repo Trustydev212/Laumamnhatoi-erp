@@ -75,11 +75,34 @@ export class ReportService {
       return acc;
     }, {});
 
+    // Calculate daily revenue
+    const dailyRevenueMap = new Map<string, { revenue: number; count: number }>();
+    orders.forEach(order => {
+      if (order.paidAt) {
+        const dateKey = order.paidAt.toISOString().split('T')[0]; // YYYY-MM-DD
+        const existing = dailyRevenueMap.get(dateKey) || { revenue: 0, count: 0 };
+        dailyRevenueMap.set(dateKey, {
+          revenue: existing.revenue + Number(order.subtotal || 0),
+          count: existing.count + 1
+        });
+      }
+    });
+
+    // Convert to array and sort by date
+    const dailyRevenue = Array.from(dailyRevenueMap.entries())
+      .map(([date, data]) => ({
+        date,
+        revenue: data.revenue,
+        orderCount: data.count
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
     return {
       totalRevenue,
       totalOrders,
       orders,
       menuStats,
+      dailyRevenue, // Add daily revenue data
     };
   }
 
@@ -184,6 +207,74 @@ export class ReportService {
       totalTables,
       totalMenuItems,
       recentOrders,
+    };
+  }
+
+  async getDailyRevenue(startDate?: string, endDate?: string) {
+    const whereClause: any = {
+      isPaid: true,
+    };
+
+    // Default to last 30 days if no dates provided
+    if (!startDate || !endDate) {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(start.getDate() - 30);
+      
+      whereClause.paidAt = {
+        gte: start,
+        lte: end,
+      };
+    } else {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      whereClause.paidAt = {
+        gte: start,
+        lte: end,
+      };
+    }
+
+    const orders = await this.prisma.order.findMany({
+      where: whereClause,
+      select: {
+        paidAt: true,
+        subtotal: true,
+      },
+    });
+
+    // Calculate daily revenue
+    const dailyRevenueMap = new Map<string, { revenue: number; count: number }>();
+    orders.forEach(order => {
+      if (order.paidAt) {
+        const dateKey = order.paidAt.toISOString().split('T')[0];
+        const existing = dailyRevenueMap.get(dateKey) || { revenue: 0, count: 0 };
+        dailyRevenueMap.set(dateKey, {
+          revenue: existing.revenue + Number(order.subtotal || 0),
+          count: existing.count + 1
+        });
+      }
+    });
+
+    // Convert to array and sort by date
+    const dailyRevenue = Array.from(dailyRevenueMap.entries())
+      .map(([date, data]) => ({
+        date,
+        revenue: data.revenue,
+        orderCount: data.count
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return {
+      dailyRevenue,
+      totalRevenue: dailyRevenue.reduce((sum, day) => sum + day.revenue, 0),
+      totalOrders: dailyRevenue.reduce((sum, day) => sum + day.orderCount, 0),
+      period: {
+        startDate: startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        endDate: endDate || new Date().toISOString().split('T')[0],
+      }
     };
   }
 }
