@@ -280,13 +280,17 @@ pm2 save
 
 ### 7. Model được sử dụng
 
-Chatbot đang sử dụng model **o1-mini** của OpenAI để tối ưu chi phí và hiệu suất.
+Chatbot đang sử dụng model **gpt-4o-mini** của OpenAI để tối ưu chi phí và hiệu suất.
 
-**Lưu ý:** Model `o1-mini` không hỗ trợ `system` role trong messages, nên system prompt được gộp vào user message. Điều này không ảnh hưởng đến chất lượng phản hồi.
+**Ưu điểm của gpt-4o-mini:**
+- Hỗ trợ đầy đủ system role và các parameters chuẩn
+- Chi phí thấp, hiệu suất tốt
+- Phản hồi nhanh và chính xác
+- Tương thích tốt với các tính năng OpenAI API
 
 ### 8. Chi phí
 
-- Model `o1-mini` có giá rẻ hơn GPT-4
+- Model `gpt-4o-mini` có giá rẻ hơn GPT-4 nhưng chất lượng tốt
 - Chỉ tính phí khi có request chat
 - Xem giá chi tiết tại: https://openai.com/pricing
 
