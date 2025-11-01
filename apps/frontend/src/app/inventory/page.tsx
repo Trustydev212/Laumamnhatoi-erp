@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { usePermissions } from '@/hooks/usePermissions';
 import ResponsiveTable from '@/components/responsive-table';
-import { ChartBarIcon, BoxIcon } from '@/components/icons';
+import { ChartBarIcon, BoxIcon, RestaurantIcon, ExclamationTriangleIcon, ArrowsUpDownIcon, ClipboardIcon, CurrencyDollarIcon, TrashIcon } from '@/components/icons';
 
 // Interfaces
 interface Ingredient {
@@ -615,17 +615,19 @@ export default function InventoryPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              📦 Xuất nhập kho
+              <BoxIcon className="w-4 h-4 inline mr-1" />
+              Xuất nhập kho
             </button>
             <button
               onClick={() => setActiveTab('recipes')}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center ${
                 activeTab === 'recipes'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              🍽️ Công thức món ăn
+              <RestaurantIcon className="w-4 h-4 mr-1" />
+              Công thức món ăn
             </button>
           </div>
         </div>
@@ -638,7 +640,7 @@ export default function InventoryPage() {
               <div className="bg-white p-4 rounded-lg shadow">
                 <div className="flex items-center">
                   <div className="p-2 bg-blue-100 rounded-lg">
-                    <span className="text-blue-600 text-xl">📦</span>
+                    <BoxIcon className="w-6 h-6 text-blue-600" />
                   </div>
                   <div className="ml-3">
                     <p className="text-sm font-medium text-gray-600">Tổng nguyên liệu</p>
@@ -650,7 +652,7 @@ export default function InventoryPage() {
               <div className="bg-white p-4 rounded-lg shadow">
                 <div className="flex items-center">
                   <div className="p-2 bg-red-100 rounded-lg">
-                    <span className="text-red-600 text-xl">⚠️</span>
+                    <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
                   </div>
                   <div className="ml-3">
                     <p className="text-sm font-medium text-gray-600">Sắp hết hàng</p>
@@ -686,7 +688,10 @@ export default function InventoryPage() {
 
             {/* Low Stock Items */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">⚠️ Nguyên liệu sắp hết</h2>
+              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+                Nguyên liệu sắp hết
+              </h2>
               {lowStockItems.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">Không có nguyên liệu nào sắp hết</p>
               ) : (
@@ -826,7 +831,10 @@ export default function InventoryPage() {
 
                 {/* Sort */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium mb-1">🔄 Sắp xếp</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5">
+                    <ArrowsUpDownIcon className="w-4 h-4" />
+                    Sắp xếp
+                  </label>
                   <div className="flex gap-1">
                     <select
                       value={sortBy}
@@ -1002,7 +1010,10 @@ export default function InventoryPage() {
         {activeTab === 'stock-movements' && (
           <div className="space-y-4 sm:space-y-6">
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">📦 Lịch sử xuất nhập kho</h2>
+              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                <BoxIcon className="w-5 h-5 text-gray-600" />
+                Lịch sử xuất nhập kho
+              </h2>
               {stockMovements.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">Chưa có lịch sử xuất nhập kho</p>
               ) : (
@@ -1043,14 +1054,20 @@ export default function InventoryPage() {
         {activeTab === 'recipes' && (
           <div className="space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <h2 className="text-base sm:text-lg font-semibold">🍽️ Quản lý công thức món ăn</h2>
+              <h2 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                <RestaurantIcon className="w-5 h-5 text-gray-600" />
+                Quản lý công thức món ăn
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Menu List */}
               <div className="bg-white rounded-lg shadow">
                 <div className="p-4 border-b">
-                  <h3 className="text-sm sm:text-base font-semibold">📋 Danh sách món ăn</h3>
+                  <h3 className="text-sm sm:text-base font-semibold flex items-center gap-1.5">
+                    <ClipboardIcon className="w-4 h-4" />
+                    Danh sách món ăn
+                  </h3>
                 </div>
                 <div className="p-4">
                   {menus.length === 0 ? (
@@ -1117,7 +1134,10 @@ export default function InventoryPage() {
                       {/* Cost Summary */}
                       {menuCost && (
                         <div className="bg-gray-50 rounded-lg p-3">
-                          <h4 className="font-semibold text-sm mb-2">💰 Chi phí nguyên liệu</h4>
+                          <h4 className="font-semibold text-sm mb-2 flex items-center gap-1.5">
+                            <CurrencyDollarIcon className="w-4 h-4" />
+                            Chi phí nguyên liệu
+                          </h4>
                           <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                             <div>
                               <span className="text-gray-600">Tổng chi phí:</span>
@@ -1484,10 +1504,10 @@ export default function InventoryPage() {
                   onChange={(e) => setAdjustStockData({...adjustStockData, type: e.target.value as any})}
                   className="w-full p-2 border rounded-lg text-sm"
                 >
-                  <option value="IN">📥 Nhập kho</option>
-                  <option value="OUT">📤 Xuất kho</option>
-                  <option value="ADJUSTMENT">🔧 Điều chỉnh</option>
-                  <option value="WASTE">🗑️ Hao hụt</option>
+                  <option value="IN">Nhập kho</option>
+                  <option value="OUT">Xuất kho</option>
+                  <option value="ADJUSTMENT">Điều chỉnh</option>
+                  <option value="WASTE">Hao hụt</option>
                 </select>
               </div>
               

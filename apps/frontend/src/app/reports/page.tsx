@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import ResponsiveTable from '@/components/responsive-table';
-import { ChartBarIcon } from '@/components/icons';
+import { ChartBarIcon, CurrencyDollarIcon, BoxIcon, UsersIcon, ClipboardIcon } from '@/components/icons';
 
 interface SalesReportData {
   totalRevenue: number;
@@ -301,27 +301,30 @@ export default function ReportsPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              💰 Doanh thu
+              <CurrencyDollarIcon className="w-4 h-4 inline mr-1" />
+              Doanh thu
             </button>
             <button
               onClick={() => setActiveTab('inventory')}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center ${
                 activeTab === 'inventory'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              📦 Tồn kho
+              <BoxIcon className="w-4 h-4 mr-1" />
+              Tồn kho
             </button>
             <button
               onClick={() => setActiveTab('customers')}
-              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center ${
                 activeTab === 'customers'
                   ? 'bg-white text-blue-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              👥 Khách hàng
+              <UsersIcon className="w-4 h-4 mr-1" />
+              Khách hàng
             </button>
           </div>
         </div>
@@ -467,7 +470,10 @@ export default function ReportsPage() {
 
             {/* Recent Orders */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">📋 Đơn hàng gần đây</h2>
+              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                <ClipboardIcon className="w-5 h-5 text-gray-600" />
+                Đơn hàng gần đây
+              </h2>
               <ResponsiveTable
                 columns={[
                   { key: 'orderNumber', label: 'Mã đơn' },
@@ -724,7 +730,10 @@ export default function ReportsPage() {
 
             {/* Inventory Details */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">📦 Chi tiết tồn kho</h2>
+              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                <BoxIcon className="w-5 h-5 text-gray-600" />
+                Chi tiết tồn kho
+              </h2>
               <ResponsiveTable
                 columns={[
                   { key: 'name', label: 'Nguyên liệu' },
@@ -790,7 +799,10 @@ export default function ReportsPage() {
 
             {/* Customer Level Stats */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">📊 Phân bố cấp độ khách hàng</h2>
+              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                <ChartBarIcon className="w-5 h-5 text-gray-600" />
+                Phân bố cấp độ khách hàng
+              </h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {Object.entries(customerData.levelStats).map(([level, count]: [string, any]) => (
                   <div key={level} className="bg-gray-50 p-4 rounded-lg">

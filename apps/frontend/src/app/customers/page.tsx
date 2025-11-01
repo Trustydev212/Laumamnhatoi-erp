@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { UsersIcon, ChartBarIcon } from '@/components/icons';
+import { UsersIcon, ChartBarIcon, ArrowsUpDownIcon, CalendarIcon, PlusIcon, CurrencyDollarIcon, PhoneIcon, EnvelopeIcon, MapPinIcon, CakeIcon } from '@/components/icons';
 
 interface Customer {
   id: string;
@@ -351,7 +351,8 @@ export default function CustomersPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              🎯 Tích điểm
+              <CurrencyDollarIcon className="w-4 h-4 inline mr-1" />
+              Tích điểm
             </button>
           </div>
         </div>
@@ -502,7 +503,10 @@ export default function CustomersPage() {
 
                 {/* Sort */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium mb-1">🔄 Sắp xếp</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5">
+                    <ArrowsUpDownIcon className="w-4 h-4" />
+                    Sắp xếp
+                  </label>
                   <div className="flex gap-1">
                     <select
                       value={sortBy}
@@ -525,7 +529,10 @@ export default function CustomersPage() {
 
                 {/* Stats */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium mb-1">📊 Thống kê</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1 flex items-center gap-1.5">
+                    <ChartBarIcon className="w-4 h-4" />
+                    Thống kê
+                  </label>
                   <div className="text-xs text-gray-600">
                     Hiển thị {getFilteredCustomers().length} / {customers.length} khách hàng
                   </div>
@@ -578,12 +585,36 @@ export default function CustomersPage() {
                         </div>
                       </div>
                       <div className="text-xs sm:text-sm text-gray-600 space-y-1">
-                        <p>📞 {customer.phone}</p>
-                        {customer.email && <p>📧 {customer.email}</p>}
-                        {customer.address && <p>📍 {customer.address}</p>}
-                        {customer.birthday && <p>🎂 {new Date(customer.birthday).toLocaleDateString('vi-VN')}</p>}
-                        <p>🎯 {customer.points} điểm</p>
-                        <p>📅 Tham gia: {new Date(customer.createdAt).toLocaleDateString('vi-VN')}</p>
+                        <p className="flex items-center gap-1">
+                          <PhoneIcon className="w-3 h-3" />
+                          {customer.phone}
+                        </p>
+                        {customer.email && (
+                          <p className="flex items-center gap-1">
+                            <EnvelopeIcon className="w-3 h-3" />
+                            {customer.email}
+                          </p>
+                        )}
+                        {customer.address && (
+                          <p className="flex items-center gap-1">
+                            <MapPinIcon className="w-3 h-3" />
+                            {customer.address}
+                          </p>
+                        )}
+                        {customer.birthday && (
+                          <p className="flex items-center gap-1">
+                            <CakeIcon className="w-3 h-3" />
+                            {new Date(customer.birthday).toLocaleDateString('vi-VN')}
+                          </p>
+                        )}
+                        <p className="flex items-center gap-1">
+                          <CurrencyDollarIcon className="w-3 h-3" />
+                          {customer.points} điểm
+                        </p>
+                        <p className="flex items-center gap-1">
+                          <CalendarIcon className="w-3 h-3" />
+                          Tham gia: {new Date(customer.createdAt).toLocaleDateString('vi-VN')}
+                        </p>
                       </div>
                       <div className={`mt-2 text-xs font-semibold px-2 py-1 rounded-full text-center ${getLevelColor(customer.level)}`}>
                         {getLevelIcon(customer.level)} {customer.level}
@@ -600,9 +631,16 @@ export default function CustomersPage() {
         {activeTab === 'points' && (
           <div className="space-y-4 sm:space-y-6">
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">🎯 Quản lý điểm tích lũy</h2>
+              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                <CurrencyDollarIcon className="w-5 h-5 text-gray-600" />
+                Quản lý điểm tích lũy
+              </h2>
               <div className="text-center py-8">
-                <div className="text-6xl mb-4">🎯</div>
+                <div className="flex justify-center mb-4">
+                  <div className="p-4 bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-full">
+                    <CurrencyDollarIcon className="w-16 h-16 text-yellow-600" />
+                  </div>
+                </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Hệ thống tích điểm</h3>
                 <p className="text-gray-600 mb-4">
                   Quản lý điểm tích lũy và cấp độ khách hàng
@@ -741,7 +779,10 @@ export default function CustomersPage() {
           <div className="bg-white rounded-lg p-4 sm:p-6 max-w-md w-full mx-2 sm:mx-4">
             <div className="flex justify-between items-center mb-3 sm:mb-4">
               <h2 className="text-lg sm:text-xl font-bold">
-                🎯 Quản lý điểm - {selectedCustomer.name}
+                <span className="flex items-center gap-1.5">
+                  <CurrencyDollarIcon className="w-4 h-4" />
+                  Quản lý điểm - {selectedCustomer.name}
+                </span>
               </h2>
               <button
                 onClick={() => setShowPointsModal(false)}
@@ -767,8 +808,8 @@ export default function CustomersPage() {
                   onChange={(e) => setPointsData({...pointsData, type: e.target.value as 'EARNED' | 'SPENT'})}
                   className="w-full p-2 border rounded-lg text-sm"
                 >
-                  <option value="EARNED">➕ Cộng điểm</option>
-                  <option value="SPENT">➖ Trừ điểm</option>
+                  <option value="EARNED">Cộng điểm</option>
+                  <option value="SPENT">Trừ điểm</option>
                 </select>
               </div>
               

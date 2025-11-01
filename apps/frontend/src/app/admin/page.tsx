@@ -11,6 +11,7 @@ import AdvancedFilter from '@/components/advanced-filter';
 import AIChatbot from '@/components/ai-chatbot';
 import ExportOrderDetails from '@/components/export-order-details';
 import ResponsiveTable from '@/components/responsive-table';
+import { ClipboardIcon, TrashIcon, ExclamationTriangleIcon } from '@/components/icons';
 
 interface SystemHealth {
   status: string;
@@ -150,6 +151,13 @@ export default function AdminPage() {
     port: 9100
   });
   const [printerConfigLoading, setPrinterConfigLoading] = useState(false);
+  
+  // Order Management states
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<any>(null);
+  const [deleteReason, setDeleteReason] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -190,6 +198,13 @@ export default function AdminPage() {
   useEffect(() => {
     if (activeTab === 'printer-settings') {
       loadPrinterConfig();
+    }
+  }, [activeTab]);
+
+  // Load orders when orders tab is active
+  useEffect(() => {
+    if (activeTab === 'orders') {
+      loadOrders();
     }
   }, [activeTab]);
 
@@ -345,6 +360,44 @@ export default function AdminPage() {
     }
   };
 
+  // Load orders
+  const loadOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      const response = await api.get('/pos/orders');
+      // Sort by createdAt descending (newest first)
+      const sortedOrders = response.data.sort((a: any, b: any) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setOrders(sortedOrders);
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  // Handle delete order
+  const handleDeleteOrder = async () => {
+    if (!orderToDelete || !deleteReason.trim()) {
+      alert('Vui lòng nhập lý do xóa đơn hàng!');
+      return;
+    }
+
+    try {
+      await api.delete(`/pos/orders/${orderToDelete.id}`);
+      setShowDeleteConfirm(false);
+      setOrderToDelete(null);
+      setDeleteReason('');
+      await loadOrders();
+      await loadData(); // Refresh system health stats
+      alert('Đã xóa đơn hàng thành công!');
+    } catch (error: any) {
+      console.error('Error deleting order:', error);
+      alert(`Lỗi khi xóa đơn hàng: ${error.response?.data?.message || error.message}`);
+    }
+  };
+
   // Filter users based on search and role
   const filteredUsers = userActivity.filter((user) => {
     const matchesSearch = !searchTerm || 
@@ -491,6 +544,12 @@ export default function AdminPage() {
               onClick={() => setActiveTab('printer-settings')}
             >
               Máy in
+            </button>
+            <button
+              className={`flex-shrink-0 py-2 px-3 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${activeTab === 'orders' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setActiveTab('orders')}
+            >
+              Đơn hàng
             </button>
           </div>
         </div>
@@ -1794,6 +1853,119 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* Orders Management Tab */}
+        {activeTab === 'orders' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-6 border-b flex justify-between items-center">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <ClipboardIcon className="w-6 h-6 text-gray-600" />
+                  Quản lý đơn hàng
+                </h2>
+                <button
+                  onClick={loadOrders}
+                  disabled={ordersLoading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+                >
+                  <svg className={`w-4 h-4 ${ordersLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  {ordersLoading ? 'Đang tải...' : 'Làm mới'}
+                </button>
+              </div>
+              <div className="p-6">
+                {ordersLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Đang tải danh sách đơn hàng...</p>
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <ClipboardIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-lg font-medium">Chưa có đơn hàng nào</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <ResponsiveTable
+                      columns={[
+                        { key: 'orderNumber', label: 'Mã đơn' },
+                        { 
+                          key: 'table', 
+                          label: 'Bàn', 
+                          render: (order) => order.table?.name || 'N/A',
+                          mobileHidden: true
+                        },
+                        { 
+                          key: 'user', 
+                          label: 'Nhân viên', 
+                          render: (order) => order.user ? `${order.user.firstName || ''} ${order.user.lastName || ''}`.trim() : 'N/A',
+                          mobileHidden: true,
+                          tabletHidden: true
+                        },
+                        { 
+                          key: 'status', 
+                          label: 'Trạng thái', 
+                          render: (order) => (
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              order.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                              order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                              order.status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {order.status === 'COMPLETED' ? 'Hoàn thành' :
+                               order.status === 'PENDING' ? 'Đang xử lý' :
+                               order.status === 'CANCELLED' ? 'Đã hủy' : order.status}
+                            </span>
+                          )
+                        },
+                        { 
+                          key: 'total', 
+                          label: 'Tổng tiền', 
+                          render: (order) => `${Number(order.total || order.subtotal || 0).toLocaleString('vi-VN')} ₫`
+                        },
+                        { 
+                          key: 'createdAt', 
+                          label: 'Ngày tạo', 
+                          render: (order) => new Date(order.createdAt).toLocaleString('vi-VN'),
+                          mobileHidden: true,
+                          tabletHidden: true
+                        },
+                        { 
+                          key: 'paidAt', 
+                          label: 'Thanh toán', 
+                          render: (order) => order.paidAt ? new Date(order.paidAt).toLocaleString('vi-VN') : 'Chưa thanh toán',
+                          mobileHidden: true,
+                          tabletHidden: true
+                        },
+                        {
+                          key: 'actions',
+                          label: 'Thao tác',
+                          render: (order) => (
+                            <button
+                              onClick={() => {
+                                setOrderToDelete(order);
+                                setShowDeleteConfirm(true);
+                              }}
+                              className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 flex items-center gap-1.5 transition-colors"
+                              title="Xóa đơn hàng"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                              <span className="hidden sm:inline">Xóa</span>
+                            </button>
+                          )
+                        }
+                      ]}
+                      data={orders}
+                      keyField="id"
+                      emptyMessage="Chưa có đơn hàng nào"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add User Modal */}
@@ -2372,6 +2544,80 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+      {/* Delete Order Confirmation Modal */}
+      {showDeleteConfirm && orderToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg p-5 sm:p-6 w-full max-w-md mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <ExclamationTriangleIcon className="w-6 h-6 text-red-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Xác nhận xóa đơn hàng</h2>
+            </div>
+            
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-sm font-medium text-red-900 mb-2">⚠️ Cảnh báo</p>
+              <p className="text-xs text-red-700">
+                Việc xóa đơn hàng sẽ ảnh hưởng đến báo cáo doanh thu và thống kê. 
+                Hành động này không thể hoàn tác!
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">Thông tin đơn hàng:</p>
+              <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-sm">
+                <p><strong>Mã đơn:</strong> {orderToDelete.orderNumber}</p>
+                <p><strong>Bàn:</strong> {orderToDelete.table?.name || 'N/A'}</p>
+                <p><strong>Trạng thái:</strong> {
+                  orderToDelete.status === 'COMPLETED' ? 'Hoàn thành' :
+                  orderToDelete.status === 'PENDING' ? 'Đang xử lý' :
+                  orderToDelete.status === 'CANCELLED' ? 'Đã hủy' : orderToDelete.status
+                }</p>
+                <p><strong>Tổng tiền:</strong> {Number(orderToDelete.total || orderToDelete.subtotal || 0).toLocaleString('vi-VN')} ₫</p>
+                <p><strong>Ngày tạo:</strong> {new Date(orderToDelete.createdAt).toLocaleString('vi-VN')}</p>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Lý do xóa đơn hàng <span className="text-red-600">*</span>
+              </label>
+              <textarea
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="Ví dụ: Đơn hàng bị tạo nhầm, lỗi hệ thống, khách hủy..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                rows={3}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Vui lòng nhập lý do để theo dõi và quản lý tốt hơn
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setOrderToDelete(null);
+                  setDeleteReason('');
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleDeleteOrder}
+                disabled={!deleteReason.trim()}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <TrashIcon className="w-4 h-4" />
+                Xóa đơn hàng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* AI Chatbot */}
       {showChatbot && <AIChatbot onClose={() => setShowChatbot(false)} />}
