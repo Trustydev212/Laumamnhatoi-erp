@@ -433,19 +433,25 @@ export class OrderService {
     }
 
     // Refund stock if order is completed (stock was already deducted)
+    // Only refund if order was completed and paid (stock was deducted when order was completed)
     if (order.status === 'COMPLETED' && order.isPaid) {
       try {
         for (const item of order.orderItems) {
-          if (item.menu?.ingredients) {
+          if (item.menuId) {
             // Use menuIngredientService to refund stock properly
             const orderItemForRefund = {
               menuId: item.menuId,
               quantity: item.quantity,
               orderId: order.id,
-              menuName: item.menu.name || 'Unknown menu'
+              menuName: item.menu?.name || 'Unknown menu'
             };
             
-            await this.menuIngredientService.refundStockForOrderItem(orderItemForRefund);
+            try {
+              await this.menuIngredientService.refundStockForOrderItem(orderItemForRefund);
+            } catch (itemError) {
+              console.error(`Error refunding stock for order item ${item.menuId}:`, itemError);
+              // Continue with other items
+            }
           }
         }
       } catch (stockError) {
@@ -455,34 +461,42 @@ export class OrderService {
     }
 
     // Update table status to available if order exists and table exists
-    if (order.tableId && order.table) {
-      // Check if there are other pending/active orders for this table
-      const otherOrders = await this.prisma.order.findMany({
-        where: {
-          tableId: order.tableId,
-          id: { not: id },
-          status: { in: ['PENDING', 'CONFIRMED'] },
-        },
-      });
+    // Only update for pending/confirmed orders (not completed ones)
+    if (order.tableId && (order.status === 'PENDING' || order.status === 'CONFIRMED')) {
+      try {
+        // Check if there are other pending/active orders for this table
+        const otherOrders = await this.prisma.order.findMany({
+          where: {
+            tableId: order.tableId,
+            id: { not: id },
+            status: { in: ['PENDING', 'CONFIRMED'] },
+          },
+        });
 
-      // Only update table status if no other active orders exist
-      if (otherOrders.length === 0) {
-        try {
+        // Only update table status if no other active orders exist
+        if (otherOrders.length === 0) {
           await this.prisma.table.update({
             where: { id: order.tableId },
             data: { status: 'AVAILABLE' },
           });
-        } catch (tableError) {
-          console.error('Error updating table status:', tableError);
-          // Continue with deletion even if table update fails
         }
+      } catch (tableError) {
+        console.error('Error updating table status:', tableError);
+        // Continue with deletion even if table update fails
       }
     }
 
     // Delete order (orderItems will be cascade deleted due to onDelete: Cascade)
-    return this.prisma.order.delete({
-      where: { id },
-    });
+    try {
+      return await this.prisma.order.delete({
+        where: { id },
+      });
+    } catch (deleteError) {
+      console.error('Error deleting order:', deleteError);
+      throw new BadRequestException(
+        `Không thể xóa đơn hàng: ${deleteError instanceof Error ? deleteError.message : 'Lỗi không xác định'}`
+      );
+    }
   }
 
   async getOrdersByTable(tableId: string) {
