@@ -18,7 +18,9 @@ export default function AIChatbot({ onClose }: { onClose?: () => void }) {
     // Check chatbot status on mount
     const checkStatus = async () => {
       try {
-        const response = await api.get('/admin/chatbot/status');
+        const response = await api.get('/admin/chatbot/status', {
+          timeout: 15000 // 15 seconds for status check
+        });
         setChatbotStatus(response.data);
         
         if (response.data.configured) {
@@ -78,8 +80,11 @@ export default function AIChatbot({ onClose }: { onClose?: () => void }) {
     setIsLoading(true);
 
     try {
+      // Tăng timeout cho chatbot request (60 giây vì cần query DB và gọi OpenAI)
       const response = await api.post('/admin/chatbot/chat', {
         message: userMessage.content
+      }, {
+        timeout: 60000 // 60 seconds for chatbot requests
       });
 
       const assistantMessage: Message = {
@@ -92,10 +97,25 @@ export default function AIChatbot({ onClose }: { onClose?: () => void }) {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error('Chatbot error:', error);
+      
+      let errorContent = 'Xin lỗi, đã xảy ra lỗi. Vui lòng thử lại.';
+      
+      if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+        errorContent = 'Yêu cầu mất quá nhiều thời gian. Vui lòng thử lại với câu hỏi ngắn hơn.';
+      } else if (error?.response?.status === 404) {
+        errorContent = 'Không tìm thấy endpoint chatbot. Vui lòng kiểm tra lại cấu hình backend.';
+      } else if (error?.response?.status === 401) {
+        errorContent = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+      } else if (error?.response?.data?.message) {
+        errorContent = error.response.data.message;
+      } else if (error?.message) {
+        errorContent = `Lỗi: ${error.message}`;
+      }
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `Xin lỗi, đã xảy ra lỗi: ${error?.response?.data?.message || error?.message || 'Unknown error'}. Vui lòng thử lại.`,
+        content: errorContent,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
