@@ -918,7 +918,7 @@ export default function PosPage() {
                     {currentOrder && (
                       <div className="flex flex-col sm:flex-row gap-2">
                         <button
-                          onClick={completeOrder}
+                          onClick={() => completeOrder('CASH')}
                           className="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-md hover:shadow-lg transition-all text-sm sm:text-base font-semibold"
                         >
                           Thanh toán & In hóa đơn
