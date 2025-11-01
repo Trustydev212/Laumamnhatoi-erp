@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { usePermissions } from '@/hooks/usePermissions';
+import ResponsiveTable from '@/components/responsive-table';
 
 // Interfaces
 interface Ingredient {
@@ -82,7 +83,7 @@ interface MenuCost {
 }
 
 export default function InventoryPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
   const { hasPermission } = usePermissions();
   
@@ -156,10 +157,19 @@ export default function InventoryPage() {
   });
   const [menuCost, setMenuCost] = useState<MenuCost | null>(null);
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
   // Load data on component mount
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   // Data loading function
   const loadData = async () => {
@@ -508,6 +518,23 @@ export default function InventoryPage() {
       alert(`Có lỗi khi xóa nguyên liệu: ${error.response?.data?.message || error.message}`);
     }
   };
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Đang kiểm tra...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (redirecting)
+  if (!user) {
+    return null;
+  }
 
   // Loading component
   if (loading) {
@@ -983,50 +1010,34 @@ export default function InventoryPage() {
               {stockMovements.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">Chưa có lịch sử xuất nhập kho</p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nguyên liệu</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lý do</th>
-                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {stockMovements.map((movement) => (
-                        <tr key={movement.id} className="hover:bg-gray-50">
-                          <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {movement.ingredient?.name || 'N/A'}
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              movement.type === 'IN' ? 'bg-green-100 text-green-800' :
-                              movement.type === 'OUT' ? 'bg-red-100 text-red-800' :
-                              movement.type === 'ADJUSTMENT' ? 'bg-blue-100 text-blue-800' :
-                              'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {movement.type === 'IN' ? 'Nhập kho' :
-                               movement.type === 'OUT' ? 'Xuất kho' :
-                               movement.type === 'ADJUSTMENT' ? 'Điều chỉnh' :
-                               'Hao hụt'}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                            {movement.quantity} {movement.ingredient?.unit || ''}
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                            {movement.reason || 'Không có'}
-                          </td>
-                          <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(movement.createdAt).toLocaleString('vi-VN')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ResponsiveTable
+                  columns={[
+                    { key: 'ingredient', label: 'Nguyên liệu', render: (movement) => movement.ingredient?.name || 'N/A' },
+                    { 
+                      key: 'type', 
+                      label: 'Loại', 
+                      render: (movement) => (
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          movement.type === 'IN' ? 'bg-green-100 text-green-800' :
+                          movement.type === 'OUT' ? 'bg-red-100 text-red-800' :
+                          movement.type === 'ADJUSTMENT' ? 'bg-blue-100 text-blue-800' :
+                          'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {movement.type === 'IN' ? 'Nhập kho' :
+                           movement.type === 'OUT' ? 'Xuất kho' :
+                           movement.type === 'ADJUSTMENT' ? 'Điều chỉnh' :
+                           'Hao hụt'}
+                        </span>
+                      )
+                    },
+                    { key: 'quantity', label: 'Số lượng', render: (movement) => `${movement.quantity} ${movement.ingredient?.unit || ''}` },
+                    { key: 'reason', label: 'Lý do', render: (movement) => movement.reason || 'Không có', mobileHidden: true },
+                    { key: 'createdAt', label: 'Thời gian', render: (movement) => new Date(movement.createdAt).toLocaleString('vi-VN'), mobileHidden: true, tabletHidden: true },
+                  ]}
+                  data={stockMovements}
+                  keyField="id"
+                  emptyMessage="Chưa có lịch sử xuất nhập kho"
+                />
               )}
             </div>
           </div>

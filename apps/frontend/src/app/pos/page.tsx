@@ -720,7 +720,7 @@ export default function PosPage() {
               </div>
 
               {/* Menu Items */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-2 sm:gap-4 max-h-80 sm:max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-3 sm:gap-4 max-h-[60vh] sm:max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                 {filteredMenu.map((item) => (
                   <div
                     key={item.id}
@@ -809,36 +809,53 @@ export default function PosPage() {
                 Chưa có món nào trong giỏ hàng
               </p>
             ) : (
-              <div className="space-y-2 sm:space-y-3">
+              <div className="space-y-3">
                 {cart.map((item) => {
                   const menuItem = menu.find(m => m.id === item.menuId);
                   if (!menuItem) return null;
                   
                   return (
-                    <div key={item.menuId} className="flex items-center justify-between border-b pb-2 sm:pb-3">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm sm:text-base truncate">{menuItem.name}</h4>
-                        <p className="text-xs sm:text-sm text-gray-600">
-                          {Number(menuItem.price).toLocaleString('vi-VN')} ₫
-                        </p>
+                    <div key={item.menuId} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 border border-gray-200 rounded-lg p-3 bg-gray-50">
+                      <div className="flex-1 min-w-0 w-full sm:w-auto">
+                        <h4 className="font-medium text-sm sm:text-base">{menuItem.name}</h4>
+                        <div className="flex items-center justify-between sm:block mt-1">
+                          <p className="text-xs sm:text-sm text-gray-600">
+                            {Number(menuItem.price).toLocaleString('vi-VN')} ₫/món
+                          </p>
+                          <p className="text-xs sm:text-sm font-semibold text-green-600 sm:hidden">
+                            Tổng: {(Number(menuItem.price) * item.quantity).toLocaleString('vi-VN')} ₫
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2 sm:space-x-3">
-                        <button
-                          onClick={() => updateCartItem(item.menuId, item.quantity - 1)}
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs sm:text-sm"
-                        >
-                          -
-                        </button>
-                        <span className="w-6 sm:w-8 text-center text-xs sm:text-sm">{item.quantity}</span>
-                        <button
-                          onClick={() => updateCartItem(item.menuId, item.quantity + 1)}
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs sm:text-sm"
-                        >
-                          +
-                        </button>
-                        <div className="w-16 sm:w-20 text-right font-semibold text-xs sm:text-sm">
+                      <div className="flex items-center justify-between w-full sm:w-auto gap-2 sm:gap-3">
+                        <div className="flex items-center space-x-2 sm:space-x-3 bg-white rounded-lg border border-gray-200 px-2 py-1">
+                          <button
+                            onClick={() => updateCartItem(item.menuId, item.quantity - 1)}
+                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm sm:text-base font-semibold transition-colors"
+                            aria-label="Giảm số lượng"
+                          >
+                            −
+                          </button>
+                          <span className="w-8 sm:w-10 text-center text-sm sm:text-base font-semibold">{item.quantity}</span>
+                          <button
+                            onClick={() => updateCartItem(item.menuId, item.quantity + 1)}
+                            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-sm sm:text-base font-semibold transition-colors"
+                            aria-label="Tăng số lượng"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="hidden sm:block w-24 text-right font-semibold text-sm">
                           {(Number(menuItem.price) * item.quantity).toLocaleString('vi-VN')} ₫
                         </div>
+                        <button
+                          onClick={() => updateCartItem(item.menuId, 0)}
+                          className="w-8 h-8 rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center text-xs sm:text-sm font-semibold"
+                          aria-label="Xóa món"
+                          title="Xóa món"
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
                   );
@@ -852,64 +869,67 @@ export default function PosPage() {
                     </span>
                   </div>
                   
-                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 mt-3 sm:mt-4">
-                    <button
-                      onClick={async () => {
-                        setCart([]);
-                        setCurrentOrder(null);
-                        if (selectedTable) {
-                          setClearedTables(prev => new Set([...Array.from(prev), selectedTable.id]));
-                          
-                          // Update table status to AVAILABLE when clearing cart
-                          try {
-                            await api.patch(`/pos/tables/${selectedTable.id}`, {
-                              status: 'AVAILABLE'
-                            });
+                  <div className="flex flex-col gap-2 mt-3 sm:mt-4">
+                    {/* Primary Actions */}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <button
+                        onClick={async () => {
+                          setCart([]);
+                          setCurrentOrder(null);
+                          if (selectedTable) {
+                            setClearedTables(prev => new Set([...Array.from(prev), selectedTable.id]));
                             
-                            // Reload data to refresh table status
-                            loadData();
-                          } catch (error: any) {
-                            console.error('Error updating table status:', error);
+                            // Update table status to AVAILABLE when clearing cart
+                            try {
+                              await api.patch(`/pos/tables/${selectedTable.id}`, {
+                                status: 'AVAILABLE'
+                              });
+                              
+                              // Reload data to refresh table status
+                              loadData();
+                            } catch (error: any) {
+                              console.error('Error updating table status:', error);
+                            }
                           }
-                        }
-                      }}
-                      className="flex-1 bg-gray-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-600 text-sm sm:text-base"
-                    >
-                      Xóa giỏ hàng
-                    </button>
-                    <button
-                      onClick={currentOrder ? addToExistingOrder : createOrder}
-                      className="flex-1 bg-blue-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base"
-                    >
-                      {currentOrder ? 'Cập nhật đơn hàng' : 'Tạo đơn hàng'}
-                    </button>
+                        }}
+                        className="flex-1 bg-gray-500 text-white py-2.5 px-4 rounded-lg hover:bg-gray-600 text-sm sm:text-base font-medium"
+                      >
+                        🗑️ Xóa giỏ hàng
+                      </button>
+                      <button
+                        onClick={currentOrder ? addToExistingOrder : createOrder}
+                        className="flex-1 bg-blue-500 text-white py-2.5 px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base font-medium"
+                      >
+                        {currentOrder ? '🔄 Cập nhật đơn hàng' : '➕ Tạo đơn hàng'}
+                      </button>
+                    </div>
+
+                    {/* Secondary Actions (only show if order exists) */}
                     {currentOrder && (
-                      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <button
                           onClick={completeOrder}
-                          className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
+                          className="flex-1 bg-green-500 text-white py-2.5 px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base font-medium"
                         >
-                          Thanh toán & In hóa đơn
+                          ✅ Thanh toán & In hóa đơn
                         </button>
                         <button
                           onClick={() => {
                             setBillData(currentOrder);
                             setShowBill(true);
                           }}
-                          className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-xs sm:text-sm"
+                          className="flex-1 sm:flex-none px-4 py-2.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-sm font-medium"
                           title="Xem hóa đơn trước khi thanh toán"
                         >
-                          Xem
+                          👁️ Xem hóa đơn
+                        </button>
+                        <button
+                          onClick={() => setShowTransferModal(true)}
+                          className="flex-1 sm:flex-none px-4 py-2.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-medium"
+                        >
+                          🔄 Chuyển bàn
                         </button>
                       </div>
-                    )}
-                    {currentOrder && (
-                      <button
-                        onClick={() => setShowTransferModal(true)}
-                        className="flex-1 bg-orange-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-orange-600 text-sm sm:text-base"
-                      >
-                        Chuyển bàn
-                      </button>
                     )}
                   </div>
                 </div>

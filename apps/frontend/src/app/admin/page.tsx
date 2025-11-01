@@ -10,6 +10,7 @@ import DataExport from '@/components/data-export';
 import AdvancedFilter from '@/components/advanced-filter';
 import AIChatbot from '@/components/ai-chatbot';
 import ExportOrderDetails from '@/components/export-order-details';
+import ResponsiveTable from '@/components/responsive-table';
 
 interface SystemHealth {
   status: string;
@@ -566,9 +567,9 @@ export default function AdminPage() {
                 {activeTab === 'logs' && (
                   <div className="space-y-6">
                     {/* Search and Filter Controls */}
-                    <div className="bg-white rounded-lg shadow p-6">
-                      <h3 className="text-lg font-semibold mb-4">Tìm kiếm và Lọc</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+                      <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Tìm kiếm và Lọc</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Tìm kiếm</label>
                           <input
@@ -615,8 +616,8 @@ export default function AdminPage() {
                           />
                         </div>
                       </div>
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="text-sm text-gray-600">
+                      <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+                        <span className="text-xs sm:text-sm text-gray-600">
                           Hiển thị {filteredSystemLogs.length} / {systemLogs.length} logs
                         </span>
                         <button
@@ -626,7 +627,7 @@ export default function AdminPage() {
                             setLogUserFilter('');
                             setLogDateFilter('');
                           }}
-                          className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
+                          className="px-3 sm:px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-xs sm:text-sm w-full sm:w-auto"
                         >
                           Xóa bộ lọc
                         </button>
@@ -838,53 +839,56 @@ export default function AdminPage() {
                   <div className="text-sm">Create new users to manage them here.</div>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full bg-white">
-                    <thead>
-                      <tr>
-                        <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Username</th>
-                        <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Email</th>
-                        <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Role</th>
-                        <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Status</th>
-                        <th className="py-2 px-4 border-b text-left text-sm font-semibold text-gray-600">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredUsers.map((user) => (
-                        <tr key={user.id} className="hover:bg-gray-50">
-                          <td className="py-2 px-4 border-b text-sm text-gray-800">{user.username}</td>
-                          <td className="py-2 px-4 border-b text-sm text-gray-800">{user.email}</td>
-                          <td className="py-2 px-4 border-b text-sm text-gray-800">{user.role}</td>
-                          <td className="py-2 px-4 border-b text-sm text-gray-800">
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                              {user.isActive ? 'Active' : 'Inactive'}
-                            </span>
-                          </td>
-                          <td className="py-2 px-4 border-b text-sm">
-                            <button
-                              onClick={() => { setSelectedUser(user); setShowEditUserModal(true); }}
-                              className="text-blue-600 hover:text-blue-800 mr-3"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleToggleUserStatus(user.id, !user.isActive)}
-                              className={`text-${user.isActive ? 'yellow' : 'green'}-600 hover:text-${user.isActive ? 'yellow' : 'green'}-800 mr-3`}
-                            >
-                              {user.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ResponsiveTable
+                  columns={[
+                    { key: 'username', label: 'Username' },
+                    { key: 'email', label: 'Email', mobileHidden: true },
+                    { key: 'role', label: 'Role' },
+                    { 
+                      key: 'status', 
+                      label: 'Status', 
+                      render: (user) => (
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {user.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      )
+                    },
+                    { 
+                      key: 'actions', 
+                      label: 'Actions', 
+                      render: (user) => (
+                        <div className="flex flex-wrap gap-1 sm:gap-2">
+                          <button
+                            onClick={() => { setSelectedUser(user); setShowEditUserModal(true); }}
+                            className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            onClick={() => handleToggleUserStatus(user.id, !user.isActive)}
+                            className={`px-2 sm:px-3 py-1 text-xs sm:text-sm rounded hover:opacity-80 transition-colors ${
+                              user.isActive 
+                                ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' 
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            }`}
+                          >
+                            {user.isActive ? 'Vô hiệu' : 'Kích hoạt'}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                      ),
+                      className: 'text-right'
+                    },
+                  ]}
+                  data={filteredUsers}
+                  keyField="id"
+                  emptyMessage="Không có người dùng nào"
+                />
               )}
               </div>
             </div>

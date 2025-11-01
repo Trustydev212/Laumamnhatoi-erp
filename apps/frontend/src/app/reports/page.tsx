@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import ResponsiveTable from '@/components/responsive-table';
 
 interface SalesReportData {
   totalRevenue: number;
@@ -56,7 +57,7 @@ interface DashboardData {
 }
 
 export default function ReportsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
   
   const [loading, setLoading] = useState(true);
@@ -71,9 +72,18 @@ export default function ReportsPage() {
     endDate: '' // No end date filter by default
   });
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    loadReportData();
-  }, [dateRange, activeTab]);
+    if (!isLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      loadReportData();
+    }
+  }, [dateRange, activeTab, user]);
 
   const loadReportData = async () => {
     try {
@@ -158,6 +168,23 @@ export default function ReportsPage() {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('vi-VN');
   };
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Đang kiểm tra...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (redirecting)
+  if (!user) {
+    return null;
+  }
 
   if (loading) {
     return (
@@ -444,51 +471,32 @@ export default function ReportsPage() {
             {/* Recent Orders */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
               <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">📋 Đơn hàng gần đây</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mã đơn</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bàn</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nhân viên</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {dashboardData.recentOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {order.orderNumber}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {order.table?.name || 'N/A'}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {order.user?.firstName} {order.user?.lastName}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(Number(order.total))}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            order.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                            order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {order.status === 'COMPLETED' ? 'Hoàn thành' :
-                             order.status === 'PENDING' ? 'Đang xử lý' : order.status}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(order.createdAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <ResponsiveTable
+                columns={[
+                  { key: 'orderNumber', label: 'Mã đơn' },
+                  { key: 'table', label: 'Bàn', render: (order) => order.table?.name || 'N/A', mobileHidden: true },
+                  { key: 'user', label: 'Nhân viên', render: (order) => `${order.user?.firstName || ''} ${order.user?.lastName || ''}`.trim() || 'N/A', mobileHidden: true },
+                  { key: 'total', label: 'Tổng tiền', render: (order) => formatCurrency(Number(order.total)) },
+                  { 
+                    key: 'status', 
+                    label: 'Trạng thái', 
+                    render: (order) => (
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        order.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                        order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {order.status === 'COMPLETED' ? 'Hoàn thành' :
+                         order.status === 'PENDING' ? 'Đang xử lý' : order.status}
+                      </span>
+                    )
+                  },
+                  { key: 'createdAt', label: 'Ngày tạo', render: (order) => formatDate(order.createdAt), mobileHidden: true, tabletHidden: true },
+                ]}
+                data={dashboardData.recentOrders}
+                keyField="id"
+                emptyMessage="Chưa có đơn hàng nào"
+              />
             </div>
           </div>
         )}
@@ -650,32 +658,21 @@ export default function ReportsPage() {
             {/* Top Selling Items */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
               <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">🏆 Món bán chạy nhất</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Món ăn</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số lượng</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doanh thu</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {Object.entries(salesData.menuStats).map(([menuName, stats]: [string, any]) => (
-                      <tr key={menuName} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {menuName}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {stats.quantity}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(stats.revenue)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <ResponsiveTable
+                columns={[
+                  { key: 'name', label: 'Món ăn' },
+                  { key: 'quantity', label: 'Số lượng', mobileHidden: true },
+                  { key: 'revenue', label: 'Doanh thu', render: (item) => formatCurrency(item.revenue) },
+                ]}
+                data={Object.entries(salesData.menuStats).map(([menuName, stats]: [string, any]) => ({
+                  id: menuName,
+                  name: menuName,
+                  quantity: stats.quantity,
+                  revenue: stats.revenue
+                }))}
+                keyField="id"
+                emptyMessage="Chưa có dữ liệu món bán chạy"
+              />
             </div>
           </div>
         )}
@@ -731,50 +728,31 @@ export default function ReportsPage() {
             {/* Inventory Details */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
               <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">📦 Chi tiết tồn kho</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nguyên liệu</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tồn kho</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tối thiểu</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đơn vị</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {inventoryData.ingredients.map((ingredient) => (
-                      <tr key={ingredient.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {ingredient.name}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {Number(ingredient.currentStock)}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {Number(ingredient.minStock)}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {ingredient.unit}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {formatCurrency(Number(ingredient.costPrice))}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            Number(ingredient.currentStock) <= Number(ingredient.minStock)
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {Number(ingredient.currentStock) <= Number(ingredient.minStock) ? 'Sắp hết' : 'Đủ hàng'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <ResponsiveTable
+                columns={[
+                  { key: 'name', label: 'Nguyên liệu' },
+                  { key: 'currentStock', label: 'Tồn kho', render: (item) => Number(item.currentStock) },
+                  { key: 'minStock', label: 'Tối thiểu', render: (item) => Number(item.minStock), mobileHidden: true },
+                  { key: 'unit', label: 'Đơn vị', mobileHidden: true },
+                  { key: 'costPrice', label: 'Giá', render: (item) => formatCurrency(Number(item.costPrice)), mobileHidden: true, tabletHidden: true },
+                  { 
+                    key: 'status', 
+                    label: 'Trạng thái', 
+                    render: (item) => (
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        Number(item.currentStock) <= Number(item.minStock)
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {Number(item.currentStock) <= Number(item.minStock) ? 'Sắp hết' : 'Đủ hàng'}
+                      </span>
+                    )
+                  },
+                ]}
+                data={inventoryData.ingredients}
+                keyField="id"
+                emptyMessage="Không có nguyên liệu nào"
+              />
             </div>
           </div>
         )}
@@ -836,50 +814,34 @@ export default function ReportsPage() {
             {/* Top Customers */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
               <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">👑 Khách hàng hàng đầu</h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số điện thoại</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Điểm</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cấp độ</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày đăng ký</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {customerData.customers.map((customer) => (
-                      <tr key={customer.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {customer.name}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {customer.phone}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {customer.points}
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            customer.level === 'PLATINUM' ? 'bg-purple-100 text-purple-800' :
-                            customer.level === 'GOLD' ? 'bg-yellow-100 text-yellow-800' :
-                            customer.level === 'SILVER' ? 'bg-gray-100 text-gray-800' :
-                            'bg-orange-100 text-orange-800'
-                          }`}>
-                            {customer.level === 'BRONZE' ? '🥉 Đồng' :
-                             customer.level === 'SILVER' ? '🥈 Bạc' :
-                             customer.level === 'GOLD' ? '🥇 Vàng' :
-                             customer.level === 'PLATINUM' ? '💎 Bạch kim' : customer.level}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(customer.createdAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <ResponsiveTable
+                columns={[
+                  { key: 'name', label: 'Tên' },
+                  { key: 'phone', label: 'Số điện thoại', mobileHidden: true },
+                  { key: 'points', label: 'Điểm' },
+                  { 
+                    key: 'level', 
+                    label: 'Cấp độ', 
+                    render: (customer) => (
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        customer.level === 'PLATINUM' ? 'bg-purple-100 text-purple-800' :
+                        customer.level === 'GOLD' ? 'bg-yellow-100 text-yellow-800' :
+                        customer.level === 'SILVER' ? 'bg-gray-100 text-gray-800' :
+                        'bg-orange-100 text-orange-800'
+                      }`}>
+                        {customer.level === 'BRONZE' ? '🥉 Đồng' :
+                         customer.level === 'SILVER' ? '🥈 Bạc' :
+                         customer.level === 'GOLD' ? '🥇 Vàng' :
+                         customer.level === 'PLATINUM' ? '💎 Bạch kim' : customer.level}
+                      </span>
+                    )
+                  },
+                  { key: 'createdAt', label: 'Ngày đăng ký', render: (customer) => formatDate(customer.createdAt), mobileHidden: true, tabletHidden: true },
+                ]}
+                data={customerData.customers}
+                keyField="id"
+                emptyMessage="Chưa có khách hàng nào"
+              />
             </div>
           </div>
         )}
