@@ -60,6 +60,43 @@ export class ChatbotService {
    * Get comprehensive business data for context
    */
   private async getBusinessContext(): Promise<string> {
+    // Get orders for daily revenue calculation (last 30 days)
+    const orders30Days = await this.prisma.order.findMany({
+      where: {
+        isPaid: true,
+        paidAt: {
+          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        }
+      },
+      select: {
+        paidAt: true,
+        subtotal: true
+      }
+    });
+
+    // Calculate daily revenue
+    const dailyRevenueMap = new Map<string, { revenue: number; count: number }>();
+    orders30Days.forEach(order => {
+      if (order.paidAt) {
+        const dateKey = order.paidAt.toISOString().split('T')[0]; // YYYY-MM-DD
+        const existing = dailyRevenueMap.get(dateKey) || { revenue: 0, count: 0 };
+        dailyRevenueMap.set(dateKey, {
+          revenue: existing.revenue + Number(order.subtotal || 0),
+          count: existing.count + 1
+        });
+      }
+    });
+
+    // Sort by date (newest first) and take last 14 days
+    const dailyRevenue = Array.from(dailyRevenueMap.entries())
+      .map(([date, data]) => ({
+        date,
+        revenue: data.revenue,
+        count: data.count
+      }))
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 14);
+
     const [
       totalUsers,
       totalOrders,
@@ -154,35 +191,42 @@ export class ChatbotService {
       0
     );
 
-    // Format context string
+    // Format context string - Plain text format, no markdown
     const context = `
-=== HỆ THỐNG ERP - NHÀ TÔI RESTAURANT ===
+HỆ THỐNG ERP - NHÀ TÔI RESTAURANT
 
-**THỐNG KÊ TỔNG QUAN:**
+THỐNG KÊ TỔNG QUAN:
 - Tổng số người dùng: ${totalUsers}
 - Tổng số đơn hàng: ${totalOrders}
 - Tổng số khách hàng: ${totalCustomers}
 
-**DOANH THU 30 NGÀY GẦN NHẤT:**
+DOANH THU 30 NGÀY GẦN NHẤT:
 - Tổng doanh thu: ${Number(revenueAggregate._sum.subtotal || 0).toLocaleString('vi-VN')} đ (trước thuế)
 - Số đơn đã thanh toán: ${revenueAggregate._count}
 
-**TỒN KHO:**
+DOANH THU THEO TỪNG NGÀY (14 ngày gần nhất):
+${dailyRevenue.length > 0 ? dailyRevenue.map(item => {
+  const date = new Date(item.date);
+  const dateStr = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return `- ${dateStr}: ${item.revenue.toLocaleString('vi-VN')} đ (${item.count} đơn)`;
+}).join('\n') : '- Chưa có dữ liệu'}
+
+TỒN KHO:
 - Tổng số nguyên liệu: ${inventorySummary.length}
 - Nguyên liệu sắp hết: ${lowStockItems.length}
 - Tổng giá trị tồn kho: ${totalInventoryValue.toLocaleString('vi-VN')} đ
 - Danh sách nguyên liệu sắp hết: ${lowStockItems.map(ing => `${ing.name} (${ing.currentStock} ${ing.unit})`).join(', ') || 'Không có'}
 
-**TOP MÓN ĂN (10 món bán chạy nhất):**
+TOP MÓN ĂN (10 món bán chạy nhất):
 ${topItemsWithNames.map((item, idx) => `${idx + 1}. ${item.name}: ${item.quantity} phần, doanh thu ${item.revenue.toLocaleString('vi-VN')} đ`).join('\n')}
 
-**ĐƠN HÀNG GẦN ĐÂY (7 ngày):**
+ĐƠN HÀNG GẦN ĐÂY (7 ngày):
 - Số đơn: ${recentOrders.length}
 ${recentOrders.slice(0, 5).map((order, idx) => 
-  `  ${idx + 1}. Đơn #${order.orderNumber}: ${Number(order.total).toLocaleString('vi-VN')} đ (${order.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'})`
+  `${idx + 1}. Đơn #${order.orderNumber}: ${Number(order.total).toLocaleString('vi-VN')} đ (${order.isPaid ? 'Đã thanh toán' : 'Chưa thanh toán'})`
 ).join('\n')}
 
-=== KẾT THÚC DỮ LIỆU HỆ THỐNG ===
+KẾT THÚC DỮ LIỆU HỆ THỐNG
     `.trim();
 
     return context;
@@ -222,8 +266,6 @@ Dữ liệu hiện tại của hệ thống sẽ được cung cấp trong conte
       const userMessage = `Dữ liệu hệ thống hiện tại:
 
 ${context}
-
----
 
 Câu hỏi của người dùng: ${message}
 
