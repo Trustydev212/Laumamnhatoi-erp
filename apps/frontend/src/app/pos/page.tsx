@@ -1049,10 +1049,46 @@ export default function PosPage() {
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 no-print">
               <button
-                onClick={() => {
+                onClick={async () => {
+                  // Tự động hoàn tất thanh toán với phương thức chuyển khoản khi click "In QR thanh toán"
+                  // Tìm orderId từ billData
+                  const orderId = billData.id || currentOrder?.id;
+                  
+                  if (orderId && !billData.isPaid) {
+                    try {
+                      // Update order status to COMPLETED with BANK_TRANSFER method
+                      const updatedOrder = await api.patch(`/pos/orders/${orderId}/status`, {
+                        status: 'COMPLETED',
+                        paymentMethod: 'BANK_TRANSFER'
+                      });
+                      
+                      // Update table status to AVAILABLE when order is completed
+                      if (selectedTable) {
+                        await api.patch(`/pos/tables/${selectedTable.id}`, {
+                          status: 'AVAILABLE'
+                        });
+                      }
+                      
+                      // Update bill data with completed order
+                      setBillData(updatedOrder.data);
+                      
+                      // Show success message
+                      alert('Đã hoàn tất thanh toán chuyển khoản!');
+                      
+                      // Clear cart and reload
+                      setCart([]);
+                      setCurrentOrder(null);
+                      loadData();
+                    } catch (error: any) {
+                      console.error('Error completing order with bank transfer:', error);
+                      alert(`Có lỗi khi hoàn thành đơn hàng: ${error.response?.data?.message || error.message}`);
+                      return;
+                    }
+                  }
+                  
                   // Hiển thị QR modal để in qua browser
                   const qrDataValue = {
-                    amount: Number(billData.total) || 0,
+                    amount: Number(billData.total || billData.subtotal) || 0,
                     billId: billData.id || billData.orderNumber || 'UNKNOWN'
                   };
                   setQRData(qrDataValue);
@@ -1060,7 +1096,7 @@ export default function PosPage() {
                 }}
                 className="flex-1 bg-green-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-green-600 text-sm sm:text-base"
               >
-                💳 In QR thanh toán
+                💳 Thanh toán chuyển khoản & In QR
               </button>
               {/* Nút in qua máy tính - Backend render ESC/POS HTML */}
               <button
@@ -1227,17 +1263,8 @@ export default function PosPage() {
               </button>
               <button
                 onClick={() => {
-                  // Đơn hàng đã được hoàn tất khi click "In QR thanh toán"
+                  // Đơn hàng đã được hoàn tất khi click "Thanh toán chuyển khoản & In QR"
                   // Nút này chỉ để đóng modal
-                  setShowQRModal(false);
-                  setQRData(null);
-                }}
-                className="flex-1 bg-gray-500 text-white py-2 px-3 sm:px-4 rounded-lg hover:bg-gray-600 text-sm sm:text-base"
-              >
-                Đóng
-              </button>
-              <button
-                onClick={() => {
                   setShowQRModal(false);
                   setQRData(null);
                 }}
