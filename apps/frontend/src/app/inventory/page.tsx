@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { usePermissions } from '@/hooks/usePermissions';
 import ResponsiveTable from '@/components/responsive-table';
-import { ChartBarIcon, BoxIcon, RestaurantIcon, ExclamationTriangleIcon, ArrowsUpDownIcon, ClipboardIcon, CurrencyDollarIcon, TrashIcon } from '@/components/icons';
+import { ChartBarIcon, BoxIcon, RestaurantIcon, ExclamationTriangleIcon, ArrowsUpDownIcon, ClipboardIcon, CurrencyDollarIcon, TrashIcon, BuildingIcon, ClockIcon, ChefIcon } from '@/components/icons';
 
 // Interfaces
 interface Ingredient {
@@ -605,7 +605,8 @@ export default function InventoryPage() {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              🏢 Nhà cung cấp
+              <BuildingIcon className="w-4 h-4 inline mr-1" />
+              Nhà cung cấp
             </button>
             <button
               onClick={() => setActiveTab('stock-movements')}
@@ -664,7 +665,7 @@ export default function InventoryPage() {
               <div className="bg-white p-4 rounded-lg shadow">
                 <div className="flex items-center">
                   <div className="p-2 bg-green-100 rounded-lg">
-                    <span className="text-green-600 text-xl">🏢</span>
+                    <BuildingIcon className="w-6 h-6 text-green-600" />
                   </div>
                   <div className="ml-3">
                     <p className="text-sm font-medium text-gray-600">Nhà cung cấp</p>
@@ -676,7 +677,7 @@ export default function InventoryPage() {
               <div className="bg-white p-4 rounded-lg shadow">
                 <div className="flex items-center">
                   <div className="p-2 bg-yellow-100 rounded-lg">
-                    <span className="text-yellow-600 text-xl">⏰</span>
+                    <ClockIcon className="w-6 h-6 text-yellow-600" />
                   </div>
                   <div className="ml-3">
                     <p className="text-sm font-medium text-gray-600">Sắp hết hạn</p>
@@ -720,7 +721,10 @@ export default function InventoryPage() {
 
             {/* Expiring Items */}
             <div className="bg-white rounded-lg shadow p-4 sm:p-6">
-              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">⏰ Nguyên liệu sắp hết hạn</h2>
+              <h2 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
+                <ClockIcon className="w-5 h-5 text-yellow-600" />
+                Nguyên liệu sắp hết hạn
+              </h2>
               {expiringItems.length === 0 ? (
                 <p className="text-gray-500 text-center py-4">Không có nguyên liệu nào sắp hết hạn</p>
               ) : (
@@ -795,7 +799,10 @@ export default function InventoryPage() {
 
                 {/* Supplier Filter */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium mb-1">🏢 Nhà cung cấp</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1 flex items-center gap-1">
+                    <BuildingIcon className="w-4 h-4" />
+                    Nhà cung cấp
+                  </label>
                   <select
                     value={supplierFilter}
                     onChange={(e) => setSupplierFilter(e.target.value)}
@@ -825,7 +832,7 @@ export default function InventoryPage() {
                     <option value="normal">🟢 Bình thường</option>
                     <option value="low">🟡 Sắp hết</option>
                     <option value="out">🔴 Hết hàng</option>
-                    <option value="expiring">⏰ Sắp hết hạn</option>
+                    <option value="expiring">Sắp hết hạn</option>
                   </select>
                 </div>
 
@@ -1113,7 +1120,16 @@ export default function InventoryPage() {
                 <div className="p-4 border-b">
                   <div className="flex justify-between items-center">
                     <h3 className="text-sm sm:text-base font-semibold">
-                      {selectedMenu ? `🧑‍🍳 Công thức: ${selectedMenu.name}` : 'Chọn món ăn để xem công thức'}
+                      <span className="flex items-center gap-2">
+                        {selectedMenu ? (
+                          <>
+                            <ChefIcon className="w-5 h-5" />
+                            <span>Công thức: {selectedMenu.name}</span>
+                          </>
+                        ) : (
+                          'Chọn món ăn để xem công thức'
+                        )}
+                      </span>
                     </h3>
                     {selectedMenu && hasPermission('inventory:create') && (
                       <button

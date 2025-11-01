@@ -408,16 +408,78 @@ export class OrderService {
   }
 
   async remove(id: string) {
-    const order = await this.findOne(id);
-    
-    // Update table status to available if order is cancelled
-    if (order.status === 'PENDING' || order.status === 'CONFIRMED') {
-      await this.prisma.table.update({
-        where: { id: order.tableId },
-        data: { status: 'AVAILABLE' },
-      });
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        orderItems: {
+          include: {
+            menu: {
+              include: {
+                ingredients: {
+                  include: {
+                    ingredient: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        table: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
     }
 
+    // Refund stock if order is completed (stock was already deducted)
+    if (order.status === 'COMPLETED' && order.isPaid) {
+      try {
+        for (const item of order.orderItems) {
+          if (item.menu?.ingredients) {
+            // Use menuIngredientService to refund stock properly
+            const orderItemForRefund = {
+              menuId: item.menuId,
+              quantity: item.quantity,
+              orderId: order.id,
+              menuName: item.menu.name || 'Unknown menu'
+            };
+            
+            await this.menuIngredientService.refundStockForOrderItem(orderItemForRefund);
+          }
+        }
+      } catch (stockError) {
+        console.error('Error refunding stock when deleting order:', stockError);
+        // Continue with deletion even if stock refund fails
+      }
+    }
+
+    // Update table status to available if order exists and table exists
+    if (order.tableId && order.table) {
+      // Check if there are other pending/active orders for this table
+      const otherOrders = await this.prisma.order.findMany({
+        where: {
+          tableId: order.tableId,
+          id: { not: id },
+          status: { in: ['PENDING', 'CONFIRMED'] },
+        },
+      });
+
+      // Only update table status if no other active orders exist
+      if (otherOrders.length === 0) {
+        try {
+          await this.prisma.table.update({
+            where: { id: order.tableId },
+            data: { status: 'AVAILABLE' },
+          });
+        } catch (tableError) {
+          console.error('Error updating table status:', tableError);
+          // Continue with deletion even if table update fails
+        }
+      }
+    }
+
+    // Delete order (orderItems will be cascade deleted due to onDelete: Cascade)
     return this.prisma.order.delete({
       where: { id },
     });
