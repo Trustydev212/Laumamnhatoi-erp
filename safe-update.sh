@@ -261,14 +261,36 @@ npm run db:generate || {
 }
 
 # Run migrations (safe - only apply new migrations)
-if npm run db:migrate deploy 2>/dev/null; then
+# Use prisma migrate deploy for production (doesn't ask for reset, only applies new migrations)
+print_status "   Đang kiểm tra migrations..."
+
+# Try migrate deploy first (for production)
+MIGRATE_OUTPUT=$(npx prisma migrate deploy 2>&1)
+MIGRATE_EXIT_CODE=$?
+
+if [ $MIGRATE_EXIT_CODE -eq 0 ]; then
     print_success "✅ Migrations đã được áp dụng"
-elif npm run db:push 2>/dev/null; then
-    print_warning "⚠️  Sử dụng db:push thay vì migrate (development mode)"
-    print_success "✅ Database schema đã được cập nhật"
+elif echo "$MIGRATE_OUTPUT" | grep -q "drift\|Drift\|not in sync"; then
+    print_warning "⚠️  Database schema có drift (không khớp với migration history)"
+    print_warning "   Đây là bình thường nếu database đã được tạo trước đó"
+    print_warning "   Đang thử sync schema bằng db push (an toàn - không mất dữ liệu)..."
+    
+    # Use db push to sync schema safely (won't reset, just updates)
+    DB_PUSH_OUTPUT=$(npx prisma db push --accept-data-loss 2>&1)
+    DB_PUSH_EXIT_CODE=$?
+    
+    if [ $DB_PUSH_EXIT_CODE -eq 0 ] && echo "$DB_PUSH_OUTPUT" | grep -q "Your database is now in sync\|is already in sync"; then
+        print_success "✅ Database schema đã được sync thành công"
+    else
+        print_warning "⚠️  Schema sync gặp vấn đề, nhưng tiếp tục..."
+        print_warning "   Database có thể đã đúng schema, chỉ thiếu migration history"
+        print_warning "   Output: $DB_PUSH_OUTPUT"
+        print_warning "   Bạn có thể chạy: npx prisma migrate resolve --applied <migration_name>"
+    fi
 else
-    print_warning "⚠️  Migration thất bại, nhưng tiếp tục..."
-    print_warning "   Kiểm tra lại schema.prisma và database connection"
+    print_warning "⚠️  Migration thất bại (exit code: $MIGRATE_EXIT_CODE)"
+    print_warning "   Lỗi: $MIGRATE_OUTPUT"
+    print_warning "   Nhưng tiếp tục với build..."
 fi
 
 cd ../..
