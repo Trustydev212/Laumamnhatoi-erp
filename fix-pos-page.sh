@@ -130,9 +130,28 @@ else
     print_warning "⚠️  Trang POS trả về status $POS_RESPONSE"
 fi
 
+# Step 8: Reload nginx (if exists)
+print_status "🔄 BƯỚC 7: Reload nginx (nếu có)..."
+if command -v nginx >/dev/null 2>&1; then
+    if sudo nginx -t 2>/dev/null; then
+        sudo systemctl reload nginx 2>/dev/null || sudo service nginx reload 2>/dev/null || true
+        print_success "✅ Nginx đã được reload"
+    else
+        print_warning "⚠️  Nginx config có lỗi, bỏ qua reload"
+    fi
+else
+    print_status "   Nginx không được cài đặt, bỏ qua"
+fi
+
 print_success "🎉 Fix POS page hoàn tất!"
 print_status "📚 Kiểm tra:"
 print_status "   - Truy cập: http://36.50.27.82:3002/pos"
 print_status "   - Xem logs: pm2 logs laumam-frontend"
+print_status "   - Kiểm tra file JS: curl -I http://localhost:3002/_next/static/chunks/app/pos/page-*.js"
 print_status "   - Kiểm tra browser console để xem lỗi chi tiết"
+print_status ""
+print_status "💡 Nếu vẫn lỗi, thử:"
+print_status "   1. Xóa cache browser (hard refresh: Ctrl+Shift+R)"
+print_status "   2. Kiểm tra nginx config: sudo nginx -t"
+print_status "   3. Reload nginx: sudo systemctl reload nginx"
 
