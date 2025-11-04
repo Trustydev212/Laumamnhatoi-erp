@@ -234,7 +234,9 @@ if [ "$ROLLBACK_NEEDED" != "true" ]; then
         ROLLBACK_NEEDED=true
     }
     cd ../frontend
-    npm install || {
+    # Cài đặt với devDependencies để có đủ packages cho build (bao gồm @tailwindcss/forms)
+    # Trong production, vẫn cần devDependencies để build Next.js
+    NODE_ENV=development npm install || {
         print_error "❌ Cài đặt frontend dependencies thất bại"
         ROLLBACK_NEEDED=true
     }
