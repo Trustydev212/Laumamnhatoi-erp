@@ -89,12 +89,30 @@ print_status "🔄 BƯỚC 5: Restart frontend service..."
 cd "$PROJECT_DIR"
 
 # Stop frontend
+print_status "   Đang dừng frontend service..."
 pm2 stop laumam-frontend 2>/dev/null || true
-sleep 2
+pm2 delete laumam-frontend 2>/dev/null || true
+
+# Kill any process using port 3002
+print_status "   Đang kill process trên port 3002..."
+pkill -9 -f "next start.*3002" 2>/dev/null || true
+pkill -9 -f "node.*3002" 2>/dev/null || true
+
+# Wait a bit for port to be released
+sleep 3
+
+# Check if port is still in use
+if lsof -ti:3002 >/dev/null 2>&1; then
+    print_warning "⚠️  Port 3002 vẫn đang được sử dụng, đang kill..."
+    lsof -ti:3002 | xargs kill -9 2>/dev/null || true
+    sleep 2
+fi
 
 # Start frontend
+print_status "   Đang khởi động frontend service..."
 pm2 start ecosystem.config.js --only laumam-frontend || {
     print_error "❌ Khởi động frontend service thất bại"
+    print_error "   Kiểm tra xem port 3002 có đang được sử dụng: lsof -i:3002"
     exit 1
 }
 

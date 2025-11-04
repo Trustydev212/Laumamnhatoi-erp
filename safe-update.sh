@@ -363,7 +363,12 @@ print_status "   Đang dừng services..."
 pm2 delete all 2>/dev/null || true
 pkill -9 -f "node dist/main" 2>/dev/null || true
 pkill -9 -f "next start" 2>/dev/null || true
-sleep 2
+
+# Kill any process using ports 3001 and 3002
+print_status "   Đang kill process trên ports 3001 và 3002..."
+lsof -ti:3001 | xargs kill -9 2>/dev/null || true
+lsof -ti:3002 | xargs kill -9 2>/dev/null || true
+sleep 3
 
 # Start services
 print_status "   Đang khởi động services..."
