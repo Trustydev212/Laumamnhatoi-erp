@@ -43,25 +43,43 @@ sleep 2
 # Step 2: Kill all processes on ports 3001 and 3002
 print_status "🔪 BƯỚC 2: Kill tất cả process trên ports 3001 và 3002..."
 
-# Kill by port
+# Kill by process name first (more aggressive)
+print_status "   Đang kill process theo tên..."
+pkill -9 -f "node.*dist/main" 2>/dev/null || true
+pkill -9 -f "next start" 2>/dev/null || true
+pkill -9 -f "nest start" 2>/dev/null || true
+pkill -9 -f "npm.*start" 2>/dev/null || true
+
+# Kill by port (multiple attempts)
+for i in 1 2 3; do
+    if lsof -ti:3001 >/dev/null 2>&1; then
+        print_warning "   Lần $i: Đang kill process trên port 3001..."
+        lsof -ti:3001 | xargs kill -9 2>/dev/null || true
+        sleep 1
+    fi
+    
+    if lsof -ti:3002 >/dev/null 2>&1; then
+        print_warning "   Lần $i: Đang kill process trên port 3002..."
+        lsof -ti:3002 | xargs kill -9 2>/dev/null || true
+        sleep 1
+    fi
+done
+
+# Final check and force kill
+print_status "   Đang kiểm tra và force kill lần cuối..."
 if lsof -ti:3001 >/dev/null 2>&1; then
-    print_warning "   Đang kill process trên port 3001..."
+    print_warning "   ⚠️  Port 3001 vẫn còn process, đang force kill..."
+    fuser -k 3001/tcp 2>/dev/null || true
     lsof -ti:3001 | xargs kill -9 2>/dev/null || true
-    sleep 1
 fi
 
 if lsof -ti:3002 >/dev/null 2>&1; then
-    print_warning "   Đang kill process trên port 3002..."
+    print_warning "   ⚠️  Port 3002 vẫn còn process, đang force kill..."
+    fuser -k 3002/tcp 2>/dev/null || true
     lsof -ti:3002 | xargs kill -9 2>/dev/null || true
-    sleep 1
 fi
 
-# Kill by process name
-pkill -9 -f "node dist/main" 2>/dev/null || true
-pkill -9 -f "next start" 2>/dev/null || true
-pkill -9 -f "nest start" 2>/dev/null || true
-
-sleep 2
+sleep 3
 
 # Step 3: Verify ports are free
 print_status "🔍 BƯỚC 3: Kiểm tra ports đã được giải phóng..."
