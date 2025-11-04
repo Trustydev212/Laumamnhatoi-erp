@@ -72,21 +72,27 @@ DB_USER="${DB_USER:-nhatoi_user}"
 DB_PASSWORD="${DB_PASSWORD:-210200}"
 
 # Extract host, port, database, user from DATABASE_URL if present
-if [[ "$DATABASE_URL" =~ postgresql://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+) ]]; then
-    DB_USER="${BASH_REMATCH[1]}"
-    DB_PASSWORD="${BASH_REMATCH[2]}"
-    DB_HOST="${BASH_REMATCH[3]}"
-    DB_PORT="${BASH_REMATCH[4]}"
-    DB_NAME="${BASH_REMATCH[5]}"
+if [[ -n "$DATABASE_URL" ]]; then
+    if [[ "$DATABASE_URL" =~ postgresql://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+) ]]; then
+        DB_USER="${BASH_REMATCH[1]}"
+        DB_PASSWORD="${BASH_REMATCH[2]}"
+        DB_HOST="${BASH_REMATCH[3]}"
+        DB_PORT="${BASH_REMATCH[4]}"
+        DB_NAME="${BASH_REMATCH[5]}"
+    elif [[ "$DATABASE_URL" =~ postgresql://([^:]+)@([^:]+):([^/]+)/(.+) ]]; then
+        DB_USER="${BASH_REMATCH[1]}"
+        DB_HOST="${BASH_REMATCH[2]}"
+        DB_PORT="${BASH_REMATCH[3]}"
+        DB_NAME="${BASH_REMATCH[4]}"
+    fi
+    
     # Remove query string from database name (e.g., ?schema=public)
-    DB_NAME="${DB_NAME%%\?*}"
-elif [[ "$DATABASE_URL" =~ postgresql://([^:]+)@([^:]+):([^/]+)/(.+) ]]; then
-    DB_USER="${BASH_REMATCH[1]}"
-    DB_HOST="${BASH_REMATCH[2]}"
-    DB_PORT="${BASH_REMATCH[3]}"
-    DB_NAME="${BASH_REMATCH[4]}"
-    # Remove query string from database name
-    DB_NAME="${DB_NAME%%\?*}"
+    # Try multiple methods to ensure compatibility
+    if [[ "$DB_NAME" == *\?* ]]; then
+        DB_NAME="${DB_NAME%%\?*}"
+    fi
+    # Also try with sed if needed
+    DB_NAME=$(echo "$DB_NAME" | sed 's/?.*//')
 fi
 
 # Set default port if not specified
