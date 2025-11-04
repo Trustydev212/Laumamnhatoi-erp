@@ -112,9 +112,21 @@ else
     print_warning "   Kiểm tra logs: pm2 logs laumam-frontend --lines 50"
 fi
 
+# Check backend status
+print_status "   Đang kiểm tra backend..."
+if curl -s http://localhost:3001/api/health > /dev/null; then
+    print_success "✅ Backend đang hoạt động"
+else
+    print_warning "⚠️  Backend health check thất bại"
+    print_warning "   Kiểm tra logs: pm2 logs laumam-backend --lines 50"
+    print_warning "   Kiểm tra status: pm2 status"
+fi
+
 print_success "🎉 Fix frontend build hoàn tất!"
 print_status "📚 Lệnh hữu ích:"
-print_status "   - Xem logs: pm2 logs laumam-frontend"
+print_status "   - Xem logs: pm2 logs"
 print_status "   - Xem status: pm2 status"
-print_status "   - Restart: pm2 restart laumam-frontend"
+print_status "   - Restart all: pm2 restart all"
+print_status "   - Xem logs frontend: pm2 logs laumam-frontend"
+print_status "   - Xem logs backend: pm2 logs laumam-backend"
 
