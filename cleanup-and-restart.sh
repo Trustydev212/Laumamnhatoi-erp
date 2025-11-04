@@ -83,30 +83,48 @@ else
     print_success "✅ Port 3002 đã được giải phóng"
 fi
 
-# Step 4: Restart PM2 daemon
-print_status "🔄 BƯỚC 4: Khởi động lại PM2 daemon..."
-pm2 kill 2>/dev/null || true
-sleep 1
-pm2 resurrect 2>/dev/null || true
-
-# Step 5: Start services
-print_status "🚀 BƯỚC 5: Khởi động services..."
+# Step 4: Start services fresh (không dùng resurrect)
+print_status "🚀 BƯỚC 4: Khởi động services..."
 cd "$PROJECT_DIR"
 
 # Start backend
 print_status "   Đang khởi động backend..."
-pm2 start ecosystem.config.js --only laumam-backend || {
-    print_error "❌ Khởi động backend thất bại"
-    exit 1
-}
+if pm2 list | grep -q "laumam-backend"; then
+    print_warning "   Backend đã chạy, đang restart..."
+    pm2 restart laumam-backend || {
+        print_warning "   Restart thất bại, đang xóa và start mới..."
+        pm2 delete laumam-backend 2>/dev/null || true
+        pm2 start ecosystem.config.js --only laumam-backend || {
+            print_error "❌ Khởi động backend thất bại"
+            exit 1
+        }
+    }
+else
+    pm2 start ecosystem.config.js --only laumam-backend || {
+        print_error "❌ Khởi động backend thất bại"
+        exit 1
+    }
+fi
 sleep 3
 
 # Start frontend
 print_status "   Đang khởi động frontend..."
-pm2 start ecosystem.config.js --only laumam-frontend || {
-    print_error "❌ Khởi động frontend thất bại"
-    exit 1
-}
+if pm2 list | grep -q "laumam-frontend"; then
+    print_warning "   Frontend đã chạy, đang restart..."
+    pm2 restart laumam-frontend 2>/dev/null || {
+        print_warning "   Restart thất bại, đang xóa và start mới..."
+        pm2 delete laumam-frontend 2>/dev/null || true
+        pm2 start ecosystem.config.js --only laumam-frontend || {
+            print_error "❌ Khởi động frontend thất bại"
+            exit 1
+        }
+    }
+else
+    pm2 start ecosystem.config.js --only laumam-frontend || {
+        print_error "❌ Khởi động frontend thất bại"
+        exit 1
+    }
+fi
 
 pm2 save
 
