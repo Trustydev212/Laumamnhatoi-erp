@@ -327,6 +327,16 @@ fi
 # Build frontend
 print_status "   Đang build frontend..."
 cd apps/frontend
+
+# Đảm bảo @tailwindcss/forms được cài đặt (cần cho build)
+if ! npm list @tailwindcss/forms >/dev/null 2>&1; then
+    print_warning "⚠️  @tailwindcss/forms chưa được cài, đang cài đặt..."
+    npm install @tailwindcss/forms @tailwindcss/typography --save-dev || {
+        print_warning "⚠️  Không thể cài @tailwindcss/forms, thử cài lại tất cả..."
+        npm install
+    }
+fi
+
 set +e  # Don't exit on error for frontend build
 npm run build
 FRONTEND_BUILD_EXIT=$?
@@ -337,6 +347,8 @@ if [ $FRONTEND_BUILD_EXIT -eq 0 ] && [ -d ".next" ]; then
     FRONTEND_BUILD_FAILED=false
 else
     print_warning "⚠️  Frontend build thất bại, nhưng tiếp tục với backend..."
+    print_warning "   Kiểm tra lại dependencies và build logs"
+    print_warning "   Có thể cần chạy: cd apps/frontend && npm install"
     FRONTEND_BUILD_FAILED=true
 fi
 cd ../..
