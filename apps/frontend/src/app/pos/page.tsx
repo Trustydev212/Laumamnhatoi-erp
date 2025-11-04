@@ -60,10 +60,41 @@ export default function PosPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [cart, setCart] = useState<OrderItem[]>([]);
+  // Lưu cart và order riêng cho từng bàn
+  const [tableCarts, setTableCarts] = useState<Map<string, OrderItem[]>>(new Map());
+  const [tableOrders, setTableOrders] = useState<Map<string, any>>(new Map());
   const [loading, setLoading] = useState(true);
-  const [currentOrder, setCurrentOrder] = useState<any>(null);
   const [clearedTables, setClearedTables] = useState<Set<string>>(new Set());
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  
+  // Helper functions để lấy/set cart và order cho bàn hiện tại
+  const getCart = () => {
+    if (!selectedTable) return [];
+    return tableCarts.get(selectedTable.id) || [];
+  };
+  
+  const setCart = (items: OrderItem[]) => {
+    if (!selectedTable) return;
+    setTableCarts(prev => new Map(prev).set(selectedTable.id, items));
+  };
+  
+  const getCurrentOrder = () => {
+    if (!selectedTable) return null;
+    return tableOrders.get(selectedTable.id) || null;
+  };
+  
+  const setCurrentOrder = (order: any) => {
+    if (!selectedTable) return;
+    if (order) {
+      setTableOrders(prev => new Map(prev).set(selectedTable.id, order));
+    } else {
+      setTableOrders(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(selectedTable.id);
+        return newMap;
+      });
+    }
+  };
   const [showBill, setShowBill] = useState(false);
   const [billData, setBillData] = useState<any>(null);
   const [taxInfo, setTaxInfo] = useState<any>(null); // Thông tin thuế từ backend
@@ -180,8 +211,16 @@ export default function PosPage() {
   const loadTableOrders = async (tableId: string) => {
     // Don't load if cart was cleared for this table
     if (clearedTables.has(tableId)) {
-      setCurrentOrder(null);
-      setCart([]);
+      setTableOrders(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(tableId);
+        return newMap;
+      });
+      setTableCarts(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(tableId);
+        return newMap;
+      });
       return;
     }
     
@@ -192,27 +231,54 @@ export default function PosPage() {
         // Only load orders that are not completed
         const activeOrders = orders.filter((order: any) => order.status !== 'COMPLETED');
         if (activeOrders.length > 0) {
-          setCurrentOrder(activeOrders[0]); // Get the latest active order
+          const order = activeOrders[0]; // Get the latest active order
+          // Lưu order riêng cho bàn này
+          setTableOrders(prev => new Map(prev).set(tableId, order));
           // Convert order items to cart format
-          const orderItems = activeOrders[0]?.orderItems || [];
+          const orderItems = order?.orderItems || [];
           const cartItems = Array.isArray(orderItems) ? orderItems.map((item: any) => ({
             menuId: item.menuId,
             quantity: item.quantity,
             notes: item.notes
           })) : [];
-          setCart(cartItems);
+          // Lưu cart riêng cho bàn này
+          setTableCarts(prev => new Map(prev).set(tableId, cartItems));
         } else {
-          setCurrentOrder(null);
-          setCart([]);
+          setTableOrders(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(tableId);
+            return newMap;
+          });
+          setTableCarts(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(tableId);
+            return newMap;
+          });
         }
       } else {
-        setCurrentOrder(null);
-        setCart([]);
+        setTableOrders(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(tableId);
+          return newMap;
+        });
+        setTableCarts(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(tableId);
+          return newMap;
+        });
       }
     } catch (error: any) {
       console.error('Error loading table orders:', error);
-      setCurrentOrder(null);
-      setCart([]);
+      setTableOrders(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(tableId);
+        return newMap;
+      });
+      setTableCarts(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(tableId);
+        return newMap;
+      });
     }
   };
 
@@ -221,6 +287,8 @@ export default function PosPage() {
     : menu.filter(item => item.category.id === selectedCategory);
 
   const addToCart = (menuItem: MenuItem) => {
+    if (!selectedTable) return;
+    const cart = getCart();
     const existingItem = cart.find(item => item.menuId === menuItem.id);
     if (existingItem) {
       setCart(cart.map(item => 
@@ -234,6 +302,8 @@ export default function PosPage() {
   };
 
   const updateCartItem = (menuId: string, quantity: number) => {
+    if (!selectedTable) return;
+    const cart = getCart();
     if (quantity <= 0) {
       setCart(cart.filter(item => item.menuId !== menuId));
     } else {
@@ -244,6 +314,7 @@ export default function PosPage() {
   };
 
   const getCartTotal = () => {
+    const cart = getCart();
     return cart.reduce((total, item) => {
       const menuItem = menu.find(m => m.id === item.menuId);
       return total + (menuItem ? Number(menuItem.price) * item.quantity : 0);
@@ -251,9 +322,12 @@ export default function PosPage() {
   };
 
   const createOrder = async () => {
-    if (!selectedTable || cart.length === 0) return;
+    if (!selectedTable) return;
+    const cart = getCart();
+    if (cart.length === 0) return;
 
     try {
+      const currentOrder = getCurrentOrder();
       // Check if table is available for new orders
       if (selectedTable.status !== 'AVAILABLE' && !currentOrder && !clearedTables.has(selectedTable.id)) {
         alert('Bàn này đã có đơn hàng. Vui lòng chọn bàn khác hoặc thêm món vào đơn hàng hiện tại.');
@@ -280,7 +354,7 @@ export default function PosPage() {
       
       alert('Đơn hàng đã được tạo thành công!');
 
-      // Clear cart after successful order
+      // Clear cart after successful order cho bàn này
       setCart([]);
       setCurrentOrder(null);
       
@@ -295,6 +369,8 @@ export default function PosPage() {
 
       // Reload data to refresh everything
       loadData();
+      // Reload orders for this table
+      await loadTableOrders(selectedTable.id);
     } catch (error: any) {
       console.error('Error creating order:', error);
       console.error('Error details:', error.response?.data);
@@ -313,7 +389,10 @@ export default function PosPage() {
   };
 
   const addToExistingOrder = async () => {
-    if (!selectedTable || cart.length === 0 || !currentOrder) return;
+    if (!selectedTable) return;
+    const cart = getCart();
+    const currentOrder = getCurrentOrder();
+    if (cart.length === 0 || !currentOrder) return;
     
     try {
       // Create new order with additional items for the same table
@@ -341,7 +420,7 @@ export default function PosPage() {
       }
       
       loadData();
-      loadTableOrders(selectedTable.id);
+      await loadTableOrders(selectedTable.id);
     } catch (error: any) {
       console.error('Error adding to order:', error);
       console.error('Error details:', error.response?.data);
@@ -350,9 +429,15 @@ export default function PosPage() {
   };
 
   const completeOrder = async (paymentMethod: 'CASH' | 'BANK_TRANSFER' = 'CASH') => {
+    if (!selectedTable) return;
+    const currentOrder = getCurrentOrder();
     if (!currentOrder) return;
     
+    // Prevent double click
+    if (isProcessingPayment) return;
+    
     try {
+      setIsProcessingPayment(true);
       // Update order status to COMPLETED using the new endpoint with payment method
       const updatedOrder = await api.patch(`/pos/orders/${currentOrder.id}/status`, {
         status: 'COMPLETED',
@@ -373,18 +458,29 @@ export default function PosPage() {
       setBillData(updatedOrder.data);
       setShowBill(true);
       
-      // Clear everything and reload
+      // Reload data trước để cập nhật trạng thái bàn
+      await loadData();
+      
+      // Reload orders cho bàn này để đảm bảo UI cập nhật đúng
+      await loadTableOrders(selectedTable.id);
+      
+      // Clear cart và order sau khi đã reload xong (để đảm bảo không có race condition)
       setCart([]);
       setCurrentOrder(null);
-      loadData();
     } catch (error: any) {
       console.error('Error completing order:', error);
+      console.error('Error details:', error.response?.data);
       alert(`Có lỗi khi hoàn thành đơn hàng: ${error.response?.data?.message || error.message}`);
+      // Không clear state nếu có lỗi để user có thể thử lại
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
   const transferTable = async (newTableId: string) => {
-    if (!currentOrder || !selectedTable) return;
+    if (!selectedTable) return;
+    const currentOrder = getCurrentOrder();
+    if (!currentOrder) return;
     
     try {
       // Update order table
@@ -402,6 +498,21 @@ export default function PosPage() {
         status: 'OCCUPIED'
       });
       
+      // Chuyển cart và order sang bàn mới
+      const cart = getCart();
+      setTableCarts(prev => {
+        const newMap = new Map(prev);
+        newMap.set(newTableId, cart);
+        newMap.delete(selectedTable.id);
+        return newMap;
+      });
+      setTableOrders(prev => {
+        const newMap = new Map(prev);
+        newMap.set(newTableId, currentOrder);
+        newMap.delete(selectedTable.id);
+        return newMap;
+      });
+      
       alert('Đã chuyển bàn thành công!');
       
       // Close modal and reload data
@@ -412,7 +523,7 @@ export default function PosPage() {
       const newTable = tables.find(t => t.id === newTableId);
       if (newTable) {
         setSelectedTable(newTable);
-        loadTableOrders(newTableId);
+        await loadTableOrders(newTableId);
       }
     } catch (error: any) {
       console.error('Error transferring table:', error);
@@ -657,13 +768,22 @@ export default function PosPage() {
                 {tables.map((table) => (
                   <button
                     key={table.id}
-                  onClick={() => {
+                  onClick={async () => {
                     setSelectedTable(table);
                     if (table.status === 'OCCUPIED' && !clearedTables.has(table.id)) {
-                      loadTableOrders(table.id);
+                      await loadTableOrders(table.id);
                     } else {
-                      setCart([]);
-                      setCurrentOrder(null);
+                      // Xóa cart và order cho bàn này nếu bàn trống
+                      setTableCarts(prev => {
+                        const newMap = new Map(prev);
+                        newMap.delete(table.id);
+                        return newMap;
+                      });
+                      setTableOrders(prev => {
+                        const newMap = new Map(prev);
+                        newMap.delete(table.id);
+                        return newMap;
+                      });
                     }
                   }}
                     className={`p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 text-xs sm:text-sm ${
@@ -767,9 +887,9 @@ export default function PosPage() {
               <h2 className="text-base sm:text-lg font-semibold">
                 Giỏ hàng - Bàn {selectedTable.name}
               </h2>
-              {currentOrder && (
+              {getCurrentOrder() && (
                 <div className="text-xs sm:text-sm text-gray-600">
-                  Đơn hàng: {currentOrder.orderNumber}
+                  Đơn hàng: {getCurrentOrder().orderNumber}
                 </div>
               )}
             </div>
@@ -813,13 +933,13 @@ export default function PosPage() {
               )}
             </div>
             
-            {cart.length === 0 ? (
+            {getCart().length === 0 ? (
               <p className="text-gray-500 text-center py-8">
                 Chưa có món nào trong giỏ hàng
               </p>
             ) : (
               <div className="space-y-3">
-                {cart.map((item) => {
+                {getCart().map((item) => {
                   const menuItem = menu.find(m => m.id === item.menuId);
                   if (!menuItem) return null;
                   
@@ -885,22 +1005,21 @@ export default function PosPage() {
                     <div className="flex flex-col sm:flex-row gap-2">
                       <button
                         onClick={async () => {
+                          if (!selectedTable) return;
                           setCart([]);
                           setCurrentOrder(null);
-                          if (selectedTable) {
-                            setClearedTables(prev => new Set([...Array.from(prev), selectedTable.id]));
+                          setClearedTables(prev => new Set([...Array.from(prev), selectedTable.id]));
+                          
+                          // Update table status to AVAILABLE when clearing cart
+                          try {
+                            await api.patch(`/pos/tables/${selectedTable.id}`, {
+                              status: 'AVAILABLE'
+                            });
                             
-                            // Update table status to AVAILABLE when clearing cart
-                            try {
-                              await api.patch(`/pos/tables/${selectedTable.id}`, {
-                                status: 'AVAILABLE'
-                              });
-                              
-                              // Reload data to refresh table status
-                              loadData();
-                            } catch (error: any) {
-                              console.error('Error updating table status:', error);
-                            }
+                            // Reload data to refresh table status
+                            loadData();
+                          } catch (error: any) {
+                            console.error('Error updating table status:', error);
                           }
                         }}
                         className="flex-1 bg-gray-500 text-white py-2.5 px-4 rounded-lg hover:bg-gray-600 text-sm sm:text-base font-medium"
@@ -908,25 +1027,28 @@ export default function PosPage() {
                         🗑️ Xóa giỏ hàng
                       </button>
                       <button
-                        onClick={currentOrder ? addToExistingOrder : createOrder}
+                        onClick={getCurrentOrder() ? addToExistingOrder : createOrder}
                         className="flex-1 bg-blue-500 text-white py-2.5 px-4 rounded-lg hover:bg-blue-600 text-sm sm:text-base font-medium"
                       >
-                        {currentOrder ? 'Cập nhật đơn hàng' : 'Tạo đơn hàng'}
+                        {getCurrentOrder() ? 'Cập nhật đơn hàng' : 'Tạo đơn hàng'}
                       </button>
                     </div>
 
                     {/* Secondary Actions (only show if order exists) */}
-                    {currentOrder && (
+                    {getCurrentOrder() && (
                       <div className="flex flex-col sm:flex-row gap-2">
                         <button
                           onClick={() => setShowPaymentMethodModal(true)}
-                          className="flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-md hover:shadow-lg transition-all text-sm sm:text-base font-semibold"
+                          disabled={isProcessingPayment}
+                          className={`flex-1 bg-green-600 text-white py-2.5 px-4 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-md hover:shadow-lg transition-all text-sm sm:text-base font-semibold ${
+                            isProcessingPayment ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
                         >
-                          💳 Thanh toán
+                          {isProcessingPayment ? '⏳ Đang xử lý...' : '💳 Thanh toán'}
                         </button>
                         <button
                           onClick={() => {
-                            setBillData(currentOrder);
+                            setBillData(getCurrentOrder());
                             setShowBill(true);
                           }}
                           className="flex-1 sm:flex-none px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 active:bg-purple-800 shadow-md hover:shadow-lg transition-all text-sm font-medium"
@@ -1250,14 +1372,14 @@ export default function PosPage() {
       )}
 
       {/* Payment Method Selection Modal */}
-      {showPaymentMethodModal && currentOrder && (
+      {showPaymentMethodModal && getCurrentOrder() && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
           <div className="bg-white rounded-lg p-5 sm:p-6 w-full max-w-md mx-2 sm:mx-4">
             <div className="text-center mb-6">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Chọn phương thức thanh toán</h2>
-              <p className="text-sm text-gray-600">Đơn hàng: {currentOrder.orderNumber}</p>
+              <p className="text-sm text-gray-600">Đơn hàng: {getCurrentOrder().orderNumber}</p>
               <p className="text-lg font-semibold text-green-600 mt-2">
-                Tổng tiền: {Number(currentOrder.total || currentOrder.subtotal || 0).toLocaleString('vi-VN')} ₫
+                Tổng tiền: {Number(getCurrentOrder().total || getCurrentOrder().subtotal || 0).toLocaleString('vi-VN')} ₫
               </p>
             </div>
 
@@ -1268,7 +1390,10 @@ export default function PosPage() {
                   // Hoàn tất thanh toán tiền mặt
                   await completeOrder('CASH');
                 }}
-                className="w-full bg-green-600 text-white py-4 px-6 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-lg hover:shadow-xl transition-all text-base sm:text-lg font-semibold flex items-center justify-center gap-3"
+                disabled={isProcessingPayment}
+                className={`w-full bg-green-600 text-white py-4 px-6 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-lg hover:shadow-xl transition-all text-base sm:text-lg font-semibold flex items-center justify-center gap-3 ${
+                  isProcessingPayment ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <span className="text-2xl">💵</span>
                 <div className="text-left">
@@ -1281,8 +1406,13 @@ export default function PosPage() {
                 onClick={async () => {
                   setShowPaymentMethodModal(false);
                   
-                  if (currentOrder) {
+                  // Prevent double click
+                  if (isProcessingPayment) return;
+                  
+                  const currentOrder = getCurrentOrder();
+                  if (currentOrder && selectedTable) {
                     try {
+                      setIsProcessingPayment(true);
                       // Update order status to COMPLETED with BANK_TRANSFER method
                       const updatedOrder = await api.patch(`/pos/orders/${currentOrder.id}/status`, {
                         status: 'COMPLETED',
@@ -1290,11 +1420,9 @@ export default function PosPage() {
                       });
                       
                       // Update table status to AVAILABLE when order is completed
-                      if (selectedTable) {
-                        await api.patch(`/pos/tables/${selectedTable.id}`, {
-                          status: 'AVAILABLE'
-                        });
-                      }
+                      await api.patch(`/pos/tables/${selectedTable.id}`, {
+                        status: 'AVAILABLE'
+                      });
                       
                       // Show bill with order data (bill will have "In QR Bank" button)
                       setBillData(updatedOrder.data);
@@ -1310,17 +1438,29 @@ export default function PosPage() {
                       // Show success message
                       alert('Đã hoàn tất thanh toán chuyển khoản! Vui lòng in hóa đơn và QR code.');
                       
-                      // Clear everything and reload
+                      // Reload data trước để cập nhật trạng thái bàn
+                      await loadData();
+                      
+                      // Reload orders cho bàn này để đảm bảo UI cập nhật đúng
+                      await loadTableOrders(selectedTable.id);
+                      
+                      // Clear cart và order sau khi đã reload xong
                       setCart([]);
                       setCurrentOrder(null);
-                      loadData();
                     } catch (error: any) {
                       console.error('Error completing order with bank transfer:', error);
+                      console.error('Error details:', error.response?.data);
                       alert(`Có lỗi khi hoàn thành đơn hàng: ${error.response?.data?.message || error.message}`);
+                      // Không clear state nếu có lỗi để user có thể thử lại
+                    } finally {
+                      setIsProcessingPayment(false);
                     }
                   }
                 }}
-                className="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 active:bg-blue-800 shadow-lg hover:shadow-xl transition-all text-base sm:text-lg font-semibold flex items-center justify-center gap-3"
+                disabled={isProcessingPayment}
+                className={`w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 active:bg-blue-800 shadow-lg hover:shadow-xl transition-all text-base sm:text-lg font-semibold flex items-center justify-center gap-3 ${
+                  isProcessingPayment ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <span className="text-2xl">💳</span>
                 <div className="text-left">
@@ -1347,7 +1487,7 @@ export default function PosPage() {
             <div className="text-center mb-3 sm:mb-4">
               <h2 className="text-lg sm:text-xl font-bold">Chuyển bàn</h2>
               <p className="text-xs sm:text-sm text-gray-600">
-                Chọn bàn mới cho đơn hàng {currentOrder?.orderNumber}
+                Chọn bàn mới cho đơn hàng {getCurrentOrder()?.orderNumber}
               </p>
             </div>
             
