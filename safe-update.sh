@@ -78,11 +78,15 @@ if [[ "$DATABASE_URL" =~ postgresql://([^:]+):([^@]+)@([^:]+):([^/]+)/(.+) ]]; t
     DB_HOST="${BASH_REMATCH[3]}"
     DB_PORT="${BASH_REMATCH[4]}"
     DB_NAME="${BASH_REMATCH[5]}"
+    # Remove query string from database name (e.g., ?schema=public)
+    DB_NAME="${DB_NAME%%\?*}"
 elif [[ "$DATABASE_URL" =~ postgresql://([^:]+)@([^:]+):([^/]+)/(.+) ]]; then
     DB_USER="${BASH_REMATCH[1]}"
     DB_HOST="${BASH_REMATCH[2]}"
     DB_PORT="${BASH_REMATCH[3]}"
     DB_NAME="${BASH_REMATCH[4]}"
+    # Remove query string from database name
+    DB_NAME="${DB_NAME%%\?*}"
 fi
 
 # Set default port if not specified
@@ -96,7 +100,11 @@ print_status "   Host: $DB_HOST:$DB_PORT"
 if command -v pg_dump >/dev/null 2>&1; then
     export PGPASSWORD="$DB_PASSWORD"
     
-    if pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -F c -f "$BACKUP_FILE" 2>/dev/null; then
+    # Try to create backup
+    DUMP_OUTPUT=$(pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -F c -f "$BACKUP_FILE" 2>&1)
+    DUMP_EXIT_CODE=$?
+    
+    if [ $DUMP_EXIT_CODE -eq 0 ] && [ -f "$BACKUP_FILE" ]; then
         print_success "✅ Backup database thành công: $BACKUP_FILE"
         
         # Compress backup to save space
@@ -110,6 +118,15 @@ if command -v pg_dump >/dev/null 2>&1; then
         print_status "   Kích thước backup: $BACKUP_SIZE"
     else
         print_error "❌ Backup database thất bại!"
+        print_error "   Exit code: $DUMP_EXIT_CODE"
+        if [ -n "$DUMP_OUTPUT" ]; then
+            print_error "   Lỗi: $DUMP_OUTPUT"
+        fi
+        print_error "   Thông tin kết nối:"
+        print_error "   - Host: $DB_HOST"
+        print_error "   - Port: $DB_PORT"
+        print_error "   - User: $DB_USER"
+        print_error "   - Database: $DB_NAME"
         print_error "   Kiểm tra lại thông tin kết nối database"
         exit 1
     fi
