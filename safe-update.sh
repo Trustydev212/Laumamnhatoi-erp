@@ -369,16 +369,21 @@ sleep 2
 print_status "   Đang khởi động services..."
 cd "$PROJECT_DIR"
 
-if [ "$FRONTEND_BUILD_FAILED" = "true" ]; then
-    pm2 start ecosystem.config.js --only laumam-backend || {
-        print_error "❌ Khởi động backend thất bại"
-        ROLLBACK_NEEDED=true
+# Always start backend
+pm2 start ecosystem.config.js --only laumam-backend || {
+    print_error "❌ Khởi động backend thất bại"
+    ROLLBACK_NEEDED=true
+}
+
+# Only start frontend if build was successful
+if [ "$FRONTEND_BUILD_FAILED" != "true" ]; then
+    pm2 start ecosystem.config.js --only laumam-frontend || {
+        print_warning "⚠️  Khởi động frontend thất bại"
+        print_warning "   Frontend sẽ không khả dụng, nhưng backend vẫn chạy"
     }
 else
-    pm2 start ecosystem.config.js || {
-        print_error "❌ Khởi động services thất bại"
-        ROLLBACK_NEEDED=true
-    }
+    print_warning "⚠️  Frontend build thất bại, không khởi động frontend service"
+    print_warning "   Cần rebuild frontend thủ công trước khi khởi động"
 fi
 
 pm2 save
@@ -396,15 +401,22 @@ if curl -s http://localhost:3001/api/health > /dev/null; then
     print_success "✅ Backend đang hoạt động"
 else
     print_warning "⚠️  Backend health check thất bại"
-    print_warning "   Kiểm tra logs: pm2 logs"
+    print_warning "   Kiểm tra logs: pm2 logs laumam-backend"
 fi
 
 if [ "$FRONTEND_BUILD_FAILED" != "true" ]; then
+    # Wait a bit more for frontend to start
+    sleep 3
     if curl -s http://localhost:3002 > /dev/null; then
         print_success "✅ Frontend đang hoạt động"
     else
         print_warning "⚠️  Frontend health check thất bại"
+        print_warning "   Kiểm tra logs: pm2 logs laumam-frontend"
+        print_warning "   Kiểm tra xem frontend có build thành công không: ls -la apps/frontend/.next"
     fi
+else
+    print_warning "⚠️  Frontend không được khởi động do build thất bại"
+    print_warning "   Để fix: cd apps/frontend && npm install && npm run build && pm2 restart laumam-frontend"
 fi
 
 # ============================================
