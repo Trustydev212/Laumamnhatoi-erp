@@ -17,8 +17,12 @@ if (typeof window !== 'undefined') {
       console.error('❌ ChunkLoadError detected:', event.error);
       
       // Lấy URL của file bị lỗi
-      const failedUrl = (target as HTMLScriptElement | HTMLLinkElement).src || 
-                       (target as HTMLScriptElement | HTMLLinkElement).href;
+      let failedUrl: string | undefined;
+      if (target.tagName === 'SCRIPT') {
+        failedUrl = (target as HTMLScriptElement).src;
+      } else if (target.tagName === 'LINK') {
+        failedUrl = (target as HTMLLinkElement).href;
+      }
       
       if (failedUrl) {
         console.warn('🔄 Retrying chunk load:', failedUrl);
