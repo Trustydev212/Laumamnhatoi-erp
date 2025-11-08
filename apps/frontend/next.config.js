@@ -12,12 +12,17 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
+  // Production optimizations
+  productionBrowserSourceMaps: false,
+  compress: true,
+  poweredByHeader: false,
+  
   // Cấu hình cho ngrok
   allowedDevOrigins: [
     'ungained-larissa-ligniform.ngrok-free.dev',
     'localhost:3000'
   ],
-  webpack: (config, { isServer, dev }) => {
+  webpack: (config, { isServer, dev, webpack }) => {
     if (isServer) {
       config.externals.push('@prisma/client')
     }
@@ -30,19 +35,51 @@ const nextConfig = {
       }
     }
     
+    // Production: đảm bảo chunks được generate đúng cách
+    if (!dev) {
+      config.optimization = {
+        ...config.optimization,
+        moduleIds: 'deterministic',
+        chunkIds: 'deterministic',
+        runtimeChunk: 'single',
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Vendor chunk
+            vendor: {
+              name: 'vendor',
+              chunks: 'all',
+              test: /node_modules/,
+              priority: 20,
+            },
+            // Common chunk
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'async',
+              priority: 10,
+              reuseExistingChunk: true,
+            },
+          },
+        },
+      }
+    }
+    
     return config
   },
-          // Cấu hình cho ngrok - Proxy API calls only (not frontend routes)
-          async rewrites() {
-            return [
-              {
-                source: '/api/:path*',
-                destination: 'http://localhost:3001/api/:path*',
-              },
-              // Only proxy actual API endpoints, not frontend routes
-              // Frontend routes like /login, /dashboard, /pos are handled by App Router
-            ]
-          },
+  // Cấu hình cho ngrok - Proxy API calls only (not frontend routes)
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:3001/api/:path*',
+      },
+      // Only proxy actual API endpoints, not frontend routes
+      // Frontend routes like /login, /dashboard, /pos are handled by App Router
+    ]
+  },
   
   // Cấu hình cho Hot Module Replacement
   onDemandEntries: {
@@ -62,6 +99,16 @@ const nextConfig = {
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
+          },
+        ],
+      },
+      // Đảm bảo static files có đúng MIME type
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },

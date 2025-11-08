@@ -4,6 +4,7 @@ import { Providers } from './providers';
 import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from '@/components/error-boundary';
 import '@/lib/global-error-handler';
+import '@/lib/chunk-error-handler';
 
 // Use system fonts instead of Google Fonts to avoid network issues during build
 // This works offline and doesn't require network access

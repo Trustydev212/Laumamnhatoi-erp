@@ -1920,9 +1920,29 @@ export default function AdminPage() {
                           )
                         },
                         { 
+                          key: 'subtotal', 
+                          label: 'Doanh thu', 
+                          render: (order) => `${Number(order.subtotal || 0).toLocaleString('vi-VN')} ₫`,
+                          mobileHidden: true
+                        },
+                        { 
                           key: 'total', 
-                          label: 'Tổng tiền', 
-                          render: (order) => `${Number(order.total || order.subtotal || 0).toLocaleString('vi-VN')} ₫`
+                          label: 'Tổng tiền (có thuế)', 
+                          render: (order) => {
+                            const subtotal = Number(order.subtotal || 0);
+                            const tax = Number(order.tax || 0);
+                            const total = Number(order.total || 0);
+                            return (
+                              <div className="text-right">
+                                <div className="font-semibold">{total.toLocaleString('vi-VN')} ₫</div>
+                                {tax > 0 && (
+                                  <div className="text-xs text-gray-500">
+                                    (Chưa thuế: {subtotal.toLocaleString('vi-VN')} ₫)
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
                         },
                         { 
                           key: 'createdAt', 
