@@ -2,10 +2,17 @@
 
 # Script deploy fix POS ChunkLoadError lên VPS
 # Chạy script này trên VPS sau khi pull code mới
+#
+# ⚠️  QUAN TRỌNG: Script này CHỈ fix frontend, KHÔNG động vào database
+# - KHÔNG chạy migrations
+# - KHÔNG reset database
+# - KHÔNG xóa dữ liệu
+# - CHỈ rebuild frontend và restart service
 
 set -e
 
 echo "🚀 Deploying POS ChunkLoadError fix..."
+echo "⚠️  LƯU Ý: Script này KHÔNG động vào database, chỉ fix frontend"
 
 # Colors
 RED='\033[0;31m'
@@ -26,6 +33,10 @@ print_warning() {
     echo -e "${YELLOW}⚠${NC} $1"
 }
 
+print_success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
 print_info() {
     echo -e "${CYAN}ℹ${NC} $1"
 }
@@ -43,6 +54,7 @@ cd "$PROJECT_ROOT"
 
 # Step 1: Pull latest code
 print_info "Pulling latest code from GitHub..."
+print_warning "⚠️  Đảm bảo database đang chạy và không bị ảnh hưởng"
 git pull origin main
 print_status "Code updated"
 
@@ -83,8 +95,9 @@ fi
 
 cd "$PROJECT_ROOT"
 
-# Step 5: Restart frontend
+# Step 5: Restart frontend (KHÔNG restart backend để tránh ảnh hưởng database)
 print_info "Restarting frontend service..."
+print_warning "⚠️  Chỉ restart frontend, backend vẫn chạy để giữ database connection"
 pm2 restart laumam-frontend || pm2 start ecosystem.config.js --only laumam-frontend
 pm2 save
 
@@ -126,4 +139,6 @@ echo "  3. Check browser console for any remaining errors"
 echo ""
 print_info "📊 Check logs: pm2 logs laumam-frontend"
 print_info "🔍 Check status: pm2 status"
+echo ""
+print_success "✅ Database không bị ảnh hưởng - tất cả dữ liệu vẫn an toàn!"
 
