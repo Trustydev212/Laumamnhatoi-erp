@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -92,9 +92,12 @@ export class PosController {
   // Order endpoints
   @Get('orders')
   @RequirePermissions(PERMISSIONS.ORDER_VIEW)
-  @ApiOperation({ summary: 'Get all orders' })
+  @ApiOperation({ summary: 'Get all orders or orders by table' })
   @ApiResponse({ status: 200, description: 'Orders retrieved successfully' })
-  async getOrders() {
+  async getOrders(@Query('tableId') tableId?: string) {
+    if (tableId) {
+      return this.orderService.getOrdersByTable(tableId);
+    }
     return this.orderService.findAll();
   }
 
