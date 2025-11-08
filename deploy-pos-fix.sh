@@ -103,16 +103,25 @@ fi
 
 cd "$PROJECT_ROOT"
 
-# Step 5: Restart frontend (KHÔNG restart backend để tránh ảnh hưởng database)
+# Step 5: Free port 3002 if needed
+print_info "Freeing port 3002 if needed..."
+lsof -ti:3002 | xargs kill -9 2>/dev/null || true
+fuser -k 3002/tcp 2>/dev/null || true
+sleep 2
+print_status "Port 3002 freed"
+
+# Step 6: Restart frontend (KHÔNG restart backend để tránh ảnh hưởng database)
 print_info "Restarting frontend service..."
 print_warning "⚠️  Chỉ restart frontend, backend vẫn chạy để giữ database connection"
-pm2 restart laumam-frontend || pm2 start ecosystem.config.js --only laumam-frontend
+pm2 delete laumam-frontend 2>/dev/null || true
+sleep 2
+pm2 start ecosystem.config.js --only laumam-frontend
 pm2 save
 
 # Wait for service to start
 sleep 5
 
-# Step 6: Check status
+# Step 7: Check status
 print_info "Checking service status..."
 sleep 3  # Wait a bit more for service to start
 if pm2 list | grep -q "laumam-frontend.*online"; then
@@ -125,7 +134,7 @@ else
     print_info "If still not running, check: pm2 logs laumam-frontend"
 fi
 
-# Step 7: Test frontend accessibility
+# Step 8: Test frontend accessibility
 print_info "Testing frontend accessibility..."
 sleep 3
 
